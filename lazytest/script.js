@@ -15,13 +15,29 @@ const levels = [
             { name: "Slide Puzzle", play: slidePuzzleGame },
             { name: "Which is Brighter?", play: whichIsBrighterGame }
         ]
+    },
+    {
+        name: "Level 3",
+        games: [
+            { name: "Ball on Path", play: ballOnPathGame },
+            { name: "Number Hunt", play: numberHuntGame },
+            { name: "Letter Sequence", play: letterSequenceGame }
+        ]
+    },
+    {
+        name: "Level 4",
+        games: [
+            { name: "I SPY", play: iSpyGame },
+            { name: "Find Identical Pair", play: findIdenticalPairGame },
+            { name: "Connect Letters", play: connectLettersGame }
+        ]
     }
 ];
 
 let currentLevel = 0;
 let currentGame = 0;
-let levelScores = [[], []];
-let completedGames = [[], []];
+let levelScores = [[], [], [], []];
+let completedGames = [[], [], [], []];
 
 /* ======================== ELEMENTS ========================== */
 const mainMenu = document.getElementById('main-menu');
@@ -46,13 +62,17 @@ const backMainBtn = document.getElementById('back-main');
 const backToGamesBtn = document.getElementById('back-to-games');
 const level1Btn = document.getElementById('level1-btn');
 const level2Btn = document.getElementById('level2-btn');
+const level3Btn = document.getElementById('level3-btn');
+const level4Btn = document.getElementById('level4-btn');
 
-function show(el) { el.classList.remove('hidden'); }
+function show(el) { if (el) el.classList.remove('hidden'); }
 function hide(...els) { els.forEach(e => e.classList.add('hidden')); }
 
 /* =========== MAIN MENU & LEVEL LOGIC =========== */
 level1Btn.onclick = () => openLevel(0);
 level2Btn.onclick = () => openLevel(1);
+level3Btn.onclick = () => openLevel(2);
+if (level4Btn) level4Btn.onclick = () => openLevel(3);
 
 function openLevel(lvl) {
     currentLevel = lvl;
@@ -111,26 +131,26 @@ function showGiftScreen() {
     show(giftScreen);
     let total = levelScores[currentLevel].reduce((a,b)=>a+b,0);
 
-    // أضف الأنيميشن لو انت في Level 1
-    if(currentLevel === 0){
         giftMsg.innerHTML = `
             <div style="width:180px; margin:0 auto 1rem auto;">
                 <img src="Animation - 1752044468269.gif" style="width:100%;" alt="Gift Animation">
             </div>
             <b>Your total score: ${total}</b><br/>Enjoy your reward! 🎁<br/>
         `;
-    }else{
-        giftMsg.innerHTML = `<b>Your total score: ${total}</b><br/>Enjoy your reward! 🎁<br/>`;
-    }
 
     playGiftSound();
 
     continueBtn.onclick = () => {
         hide(giftScreen);
-        if(currentLevel===0){
-            level2Btn.disabled = false;
+        if(currentLevel === 0){
             openLevel(1);
-        }else{
+        } else if(currentLevel === 1){
+            level3Btn.disabled = false;
+            openLevel(2);
+        } else if(currentLevel === 2){
+            if (level4Btn) level4Btn.disabled = false;
+            openLevel(3);
+        } else {
             show(finalScreen);
             finalScore.innerHTML = `<b>Total Score: ${levelScores.flat().reduce((a,b)=>a+b,0)}</b>`;
         }
@@ -144,9 +164,11 @@ function playGiftSound() {
 playAgainBtn.onclick = () => {
     currentLevel = 0;
     currentGame = 0;
-    levelScores = [[],[]];
-    completedGames = [[],[]];
-    level2Btn.disabled = true;
+    levelScores = [[],[],[],[]];
+    completedGames = [[],[],[],[]];
+    level2Btn.disabled = false;
+    level3Btn.disabled = true;
+    if (level4Btn) level4Btn.disabled = true;
     hide(finalScreen, gameArea, gameResult, giftScreen, levelGames);
     show(mainMenu);
 }
@@ -156,18 +178,6 @@ returnMainBtn.onclick = () => {
 }
 
 /* =========== SPLASH =========== */
-window.onload = () => {
-    show(document.getElementById("splash"));
-    hide(mainMenu, levelGames, gameArea, gameResult, giftScreen, finalScreen);
-    setTimeout(() => {
-        document.getElementById("splash").classList.add('hide');
-        setTimeout(() => {
-            hide(document.getElementById("splash"));
-            show(mainMenu);
-            level2Btn.disabled = true;
-        }, 600);
-    }, 1700);
-}
 
 /* =========== HOVER SOUND EFFECT =========== */
 document.addEventListener('DOMContentLoaded', function () {
@@ -1325,28 +1335,783 @@ function whichIsBrighterGame(startGameCallback) {
     }
 }
 
-// ================ تعديل showGiftScreen لـ Level 2 ================
+// ================= BALL ON PATH GAME =================
+function ballOnPathGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    let finished = false;
+    let score = 0;
+    let timer = 60;
+    let timerInterval;
+
+    gameArea.innerHTML = `
+        <div id="bop-container" style="
+            max-width: 600px;
+            margin: 35px auto;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px #c9d7e866;
+            padding: 30px 20px 26px 20px;
+            border: 4px solid #f8b6d6;
+            text-align:center;
+            position:relative;
+        ">
+            <h1 style="font-family:'Comic Sans MS',cursive;font-size:2.5rem;color:#f875b9;margin-bottom:12px;">Ball on Path</h1>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <span style="font-size:1.18rem;font-weight:bold;color:#396485;">Score: <span id="bop-score">0</span></span>
+                <span style="font-size:1.18rem;font-weight:bold;color:#396485;">Time: <span id="bop-timer">60</span>s</span>
+            </div>
+            <div id="bop-canvas-container" style="position:relative;width:100%;height:400px;background:#fff;border-radius:15px;overflow:visible;margin-bottom:20px;">
+                <svg id="bop-svg" width="100%" height="100%" style="display:block;pointer-events:none;">
+                    <path id="bop-path" stroke="#000" stroke-width="3" fill="none" d=""/>
+                    <circle id="bop-ball" r="15" fill="url(#bop-ball-gradient)"/>
+                    <defs>
+                        <radialGradient id="bop-ball-gradient" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#ff4444"/>
+                            <stop offset="100%" stop-color="#cc0000"/>
+                        </radialGradient>
+                    </defs>
+                </svg>
+            </div>
+            <div id="bop-message" style="font-size:1.15rem;color:#ae8d40;margin-top:10px;min-height:28px;">Watch the ball move along the path!</div>
+            <button id="bop-back-btn" class="small-btn" style="position:absolute;bottom:18px;right:24px;">⟵ Back</button>
+        </div>
+    `;
+
+    const svg = document.getElementById('bop-svg');
+    const path = document.getElementById('bop-path');
+    const ball = document.getElementById('bop-ball'); // SVG circle element
+    const scoreSpan = document.getElementById('bop-score');
+    const timerSpan = document.getElementById('bop-timer');
+    const message = document.getElementById('bop-message');
+    const container = document.getElementById('bop-canvas-container');
+
+    // Create zigzag path
+    function createZigzagPath() {
+        // Use fixed dimensions for SVG
+        const svgWidth = 560;
+        const svgHeight = 400;
+        const segments = 7;
+        const segmentHeight = svgHeight / segments;
+        const margin = 20;
+        
+        svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        
+        let pathData = `M ${margin} ${segmentHeight}`;
+        let x = margin;
+        let y = segmentHeight;
+        let direction = 1; // 1 for right, -1 for left
+        
+        for (let i = 0; i < segments; i++) {
+            // Horizontal segment
+            x = direction > 0 ? (svgWidth - margin) : margin;
+            pathData += ` L ${x} ${y}`;
+            
+            // Diagonal segment (except last)
+            if (i < segments - 1) {
+                x = direction > 0 ? margin : (svgWidth - margin);
+                y += segmentHeight;
+                pathData += ` L ${x} ${y}`;
+            }
+            
+            direction *= -1;
+        }
+        
+        path.setAttribute('d', pathData);
+        return path;
+    }
+
+    // Animate ball along path
+    function animateBall() {
+        if (finished) return;
+        
+        let pathLength = path.getTotalLength();
+        let progress = 0;
+        const speed = 0.003; // Adjust speed here
+        
+        function move() {
+            if (finished) return;
+            
+            progress += speed;
+            if (progress > 1) {
+                progress = 0;
+                score++;
+                scoreSpan.textContent = score;
+                message.textContent = `Great! Score: ${score}`;
+                message.style.color = "#12af33";
+                setTimeout(() => {
+                    message.textContent = "Watch the ball move along the path!";
+                    message.style.color = "#ae8d40";
+                }, 1000);
+                // Recreate path in case container size changed
+                createZigzagPath();
+                pathLength = path.getTotalLength();
+            }
+            
+            const point = path.getPointAtLength(progress * pathLength);
+            ball.setAttribute('cx', point.x);
+            ball.setAttribute('cy', point.y);
+            
+            requestAnimationFrame(move);
+        }
+        move();
+    }
+
+    // Wait for container to be rendered
+    setTimeout(() => {
+        createZigzagPath();
+        const firstPoint = path.getPointAtLength(0);
+        ball.setAttribute('cx', firstPoint.x);
+        ball.setAttribute('cy', firstPoint.y);
+        animateBall();
+    }, 100);
+
+    document.getElementById('bop-back-btn').onclick = () => {
+        finished = true;
+        clearInterval(timerInterval);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+
+    timerInterval = setInterval(() => {
+        if (finished) return;
+        timer--;
+        timerSpan.textContent = timer;
+        if (timer <= 0) {
+            finished = true;
+            clearInterval(timerInterval);
+            setTimeout(() => showGameResult(score, "Well done!", startGameCallback), 900);
+        }
+    }, 1000);
+}
+
+// ================= NUMBER HUNT GAME =================
+function numberHuntGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    let finished = false;
+    let currentNumber = 1;
+    let timer = 60;
+    let timerInterval;
+    let numberElement = null;
+
+    // Nice wallpaper background
+    const wallpaperColors = ['#E3F2FD', '#F3E5F5', '#E8F5E9', '#FFF3E0', '#FCE4EC', '#E0F2F1'];
+    const randomWallpaper = wallpaperColors[Math.floor(Math.random() * wallpaperColors.length)];
+
+    gameArea.innerHTML = `
+        <div id="nh-container" style="
+            max-width: 95vw;
+            width: 1200px;
+            margin: 35px auto;
+            background: ${randomWallpaper};
+            border-radius: 20px;
+            box-shadow: 0 10px 30px #c9d7e866;
+            padding: 30px 20px 26px 20px;
+            border: 4px solid #f8b6d6;
+            text-align:center;
+            position:relative;
+            min-height:500px;
+        ">
+            <h1 style="font-family:'Comic Sans MS',cursive;font-size:2.5rem;color:#f875b9;margin-bottom:12px;">Number Hunt</h1>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <span style="font-size:1.18rem;font-weight:bold;color:#396485;">Find: <span id="nh-target">1</span></span>
+                <span style="font-size:1.18rem;font-weight:bold;color:#396485;">Time: <span id="nh-timer">60</span>s</span>
+            </div>
+            <div id="nh-area" style="position:relative;width:100%;height:450px;min-height:400px;margin-bottom:20px;"></div>
+            <div id="nh-message" style="font-size:1.15rem;color:#ae8d40;margin-top:10px;min-height:28px;">Click on the number!</div>
+            <button id="nh-back-btn" class="small-btn" style="position:absolute;bottom:18px;right:24px;">⟵ Back</button>
+        </div>
+    `;
+
+    const area = document.getElementById('nh-area');
+    const targetSpan = document.getElementById('nh-target');
+    const timerSpan = document.getElementById('nh-timer');
+    const message = document.getElementById('nh-message');
+
+    function showNumber() {
+        if (finished || currentNumber > 100) {
+            finished = true;
+            clearInterval(timerInterval);
+            setTimeout(() => showGameResult(currentNumber - 1, "Well done!", startGameCallback), 900);
+            return;
+        }
+
+        // Remove previous number
+        if (numberElement) {
+            numberElement.remove();
+        }
+
+        // Create new number at random position
+        numberElement = document.createElement('div');
+        numberElement.textContent = currentNumber;
+        numberElement.style.position = 'absolute';
+        numberElement.style.fontSize = '4rem';
+        numberElement.style.fontWeight = 'bold';
+        numberElement.style.color = '#2c3e50';
+        numberElement.style.cursor = 'pointer';
+        numberElement.style.userSelect = 'none';
+        numberElement.style.transition = 'transform 0.2s';
+        
+        // Random position
+        const maxX = area.offsetWidth - 100;
+        const maxY = area.offsetHeight - 100;
+        numberElement.style.left = Math.random() * maxX + 'px';
+        numberElement.style.top = Math.random() * maxY + 'px';
+        
+        numberElement.onmouseenter = () => numberElement.style.transform = 'scale(1.1)';
+        numberElement.onmouseleave = () => numberElement.style.transform = 'scale(1)';
+        
+        numberElement.onclick = () => {
+            if (finished) return;
+            currentNumber++;
+            targetSpan.textContent = currentNumber;
+            message.textContent = `Great! Find ${currentNumber}`;
+            message.style.color = "#12af33";
+            setTimeout(() => {
+                message.textContent = "Click on the number!";
+                message.style.color = "#ae8d40";
+            }, 800);
+            showNumber();
+        };
+        
+        area.appendChild(numberElement);
+    }
+
+    showNumber();
+
+    document.getElementById('nh-back-btn').onclick = () => {
+        finished = true;
+        clearInterval(timerInterval);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+
+    timerInterval = setInterval(() => {
+        if (finished) return;
+        timer--;
+        timerSpan.textContent = timer;
+        if (timer <= 0) {
+            finished = true;
+            clearInterval(timerInterval);
+            setTimeout(() => showGameResult(currentNumber - 1, "Well done!", startGameCallback), 900);
+        }
+    }, 1000);
+}
+
+// ================= LETTER SEQUENCE GAME =================
+function letterSequenceGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    let finished = false;
+    let currentIndex = 0;
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const groups = [];
+    
+    // Create groups of 3 letters
+    for (let i = 0; i < letters.length; i += 3) {
+        groups.push(letters.slice(i, i + 3));
+    }
+
+    // Light color wallpaper
+    const lightColors = ['#F0F8FF', '#F5F5DC', '#E6E6FA', '#FFF8DC', '#F0FFFF', '#FFFACD'];
+    const randomColor = lightColors[Math.floor(Math.random() * lightColors.length)];
+
+    gameArea.innerHTML = `
+        <div id="ls-container" style="
+            max-width: 95vw;
+            width: 900px;
+            margin: 35px auto;
+            background: ${randomColor};
+            border-radius: 20px;
+            box-shadow: 0 10px 30px #c9d7e866;
+            padding: 30px 20px 26px 20px;
+            border: 4px solid #f8b6d6;
+            text-align:center;
+            position:relative;
+            min-height:500px;
+        ">
+            <h1 style="font-family:'Comic Sans MS',cursive;font-size:2.5rem;color:#f875b9;margin-bottom:12px;">Letter Sequence</h1>
+            <div id="ls-letters" style="position:relative;width:100%;min-height:350px;margin:40px 0;"></div>
+            <div id="ls-message" style="font-size:1.15rem;color:#ae8d40;margin-top:10px;min-height:28px;">Watch the letters appear!</div>
+            <button id="ls-back-btn" class="small-btn" style="position:absolute;bottom:18px;right:24px;">⟵ Back</button>
+        </div>
+    `;
+
+    const lettersContainer = document.getElementById('ls-letters');
+    const message = document.getElementById('ls-message');
+
+    function showGroup(groupIndex) {
+        if (finished || groupIndex >= groups.length) {
+            finished = true;
+            setTimeout(() => showGameResult(groups.length, "Well done!", startGameCallback), 900);
+            return;
+        }
+
+        const group = groups[groupIndex];
+        lettersContainer.innerHTML = '';
+
+        // ABC (0), GHI (2), MNO (4)... = big; DEF (1), JKL (3)... = small
+        const isBigGroup = (groupIndex % 2) === 0;
+        const fontSize = isBigGroup ? '5rem' : '2.5rem';
+
+        // Random position for this group (all 3 letters together)
+        const areaW = lettersContainer.offsetWidth || 860;
+        const areaH = lettersContainer.offsetHeight || 350;
+        const groupW = isBigGroup ? 250 : 150;
+        const groupH = isBigGroup ? 100 : 60;
+        const groupX = 30 + Math.random() * Math.max(0, areaW - groupW - 60);
+        const groupY = 20 + Math.random() * Math.max(0, areaH - groupH - 40);
+
+        const groupWrapper = document.createElement('div');
+        groupWrapper.style.position = 'absolute';
+        groupWrapper.style.left = groupX + 'px';
+        groupWrapper.style.top = groupY + 'px';
+        groupWrapper.style.display = 'flex';
+        groupWrapper.style.gap = '15px';
+        groupWrapper.style.alignItems = 'center';
+        lettersContainer.appendChild(groupWrapper);
+
+        group.forEach((letter, idx) => {
+            const letterDiv = document.createElement('div');
+            letterDiv.textContent = letter;
+            letterDiv.style.fontSize = fontSize;
+            letterDiv.style.fontWeight = 'bold';
+            letterDiv.style.color = '#2c3e50';
+            letterDiv.style.opacity = '0';
+            letterDiv.style.transform = 'translateY(20px)';
+            letterDiv.style.transition = 'opacity 1s ease, transform 1s ease';
+
+            groupWrapper.appendChild(letterDiv);
+
+            setTimeout(() => {
+                letterDiv.style.opacity = '1';
+                letterDiv.style.transform = 'translateY(0)';
+            }, idx * 300);
+        });
+
+        setTimeout(() => {
+            if (!finished) {
+                showGroup(groupIndex + 1);
+            }
+        }, 4000);
+    }
+
+    showGroup(0);
+
+    document.getElementById('ls-back-btn').onclick = () => {
+        finished = true;
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+}
+
+// ================= I SPY GAME (Level 4, Game 1) =================
+function iSpyGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    const imageCount = 30;
+    const imagePaths = [];
+    for (let i = 1; i <= imageCount; i++) {
+        imagePaths.push(`img/level4/${i}.png`);
+    }
+
+    let targetIndex = 1;
+    let score = 0;
+    let finished = false;
+
+    gameArea.innerHTML = `
+        <div id="ispy-container" class="game-container" style="max-width:min(900px,95vw);width:100%;margin:1rem auto;padding:1rem;box-sizing:border-box;">
+            <h1 style="font-family:'Comic Sans MS',cursive;font-size:clamp(1.2rem,5vw,2rem);color:#f875b9;margin-bottom:8px;">I SPY</h1>
+            <p style="font-size:clamp(0.9rem,3vw,1rem);color:#396485;margin-bottom:8px;">Find image <strong id="ispy-target">1</strong> in the big window, then 2, 3...</p>
+            <div id="ispy-big-window" style="display:grid;gap:4px;padding:8px;background:#fff;border:3px solid #333;border-radius:12px;margin-bottom:12px;min-height:200px;"></div>
+            <div id="ispy-legend" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(70px,22vw),1fr));gap:6px;padding:12px;background:#f5f5f5;border-radius:12px;min-height:280px;max-height:65vh;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
+            <button id="ispy-back-btn" class="small-btn" style="margin-top:12px;">⟵ Back</button>
+        </div>
+    `;
+
+    const bigWindow = document.getElementById('ispy-big-window');
+    const legend = document.getElementById('ispy-legend');
+    const targetSpan = document.getElementById('ispy-target');
+
+    // Build legend (30 images in frames, numbered 1-30) - all visible, scroll on phone
+    for (let i = 1; i <= imageCount; i++) {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;border:2px solid #ccc;border-radius:8px;background:#fff;min-height:60px;';
+        const img = document.createElement('img');
+        img.src = imagePaths[i - 1];
+        img.onerror = () => { img.style.display = 'none'; if (item.querySelector('span')) item.querySelector('span').textContent = i; };
+        img.style.cssText = 'width:100%;height:100%;max-width:48px;max-height:48px;object-fit:contain;';
+        const num = document.createElement('span');
+        num.textContent = i;
+        num.style.fontSize = 'clamp(0.75rem,2.5vw,1rem);font-weight:bold;';
+        item.appendChild(img);
+        item.appendChild(num);
+        legend.appendChild(item);
+    }
+
+    function fillBigWindow() {
+        bigWindow.innerHTML = '';
+        const cellSize = 56;
+        const cols = Math.max(4, Math.min(12, Math.floor((bigWindow.offsetWidth || 400) / (cellSize + 4))));
+        const rows = Math.max(4, Math.floor((bigWindow.offsetHeight || 200) / (cellSize + 4)));
+        bigWindow.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+        bigWindow.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+        bigWindow.style.justifyContent = 'center';
+        bigWindow.style.alignContent = 'center';
+
+        for (let i = 0; i < cols * rows; i++) {
+            const imgIdx = Math.floor(Math.random() * imageCount);
+            const div = document.createElement('div');
+            div.style.cssText = 'width:100%;height:100%;min-width:' + cellSize + 'px;min-height:' + cellSize + 'px;border:2px solid #ddd;border-radius:8px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fafafa;box-sizing:border-box;';
+            const img = document.createElement('img');
+            img.src = imagePaths[imgIdx];
+            img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+            img.onerror = () => { img.style.background = '#ddd'; };
+            div.dataset.value = imgIdx + 1;
+            div.appendChild(img);
+            div.onclick = () => {
+                if (finished) return;
+                const val = parseInt(div.dataset.value);
+                if (val === targetIndex) {
+                    score++;
+                    targetIndex++;
+                    targetSpan.textContent = targetIndex;
+                    div.style.opacity = '0.35';
+                    div.style.pointerEvents = 'none';
+                    if (targetIndex > imageCount) {
+                        finished = true;
+                        setTimeout(() => showGameResult(score, "Well done!", startGameCallback), 800);
+                    }
+                }
+            };
+            bigWindow.appendChild(div);
+        }
+    }
+
+    fillBigWindow();
+    window.addEventListener('resize', () => { if (!finished) fillBigWindow(); });
+
+    document.getElementById('ispy-back-btn').onclick = () => {
+        finished = true;
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+}
+
+// ================= FIND IDENTICAL PAIR GAME (Level 4, Game 2) =================
+function findIdenticalPairGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    // User provides 3 images (1.png, 2.png, 3.png); we repeat first → 4 displayed: 1,2,3,1
+    const stages = [
+        { folder: 'img/level4/game2/stage1/', images: ['1.png', '2.png', '3.png', '1.png'] },
+        { folder: 'img/level4/game2/stage2/', images: ['1.png', '2.png', '3.png', '1.png'] },
+        { folder: 'img/level4/game2/stage3/', images: ['1.png', '2.png', '3.png', '1.png'] },
+        { folder: 'img/level4/game2/stage4/', images: ['1.png', '2.png', '3.png', '1.png'] }
+    ];
+    let stageIndex = 0;
+    let score = 0;
+    let selected = [];
+    let finished = false;
+
+    function runStage() {
+        if (stageIndex >= stages.length) {
+            finished = true;
+            setTimeout(() => showGameResult(score, "Well done!", startGameCallback), 800);
+            return;
+        }
+
+        const stage = stages[stageIndex];
+        const shuffled = [...stage.images].sort(() => Math.random() - 0.5);
+
+        gameArea.innerHTML = `
+            <div id="fip-container" class="game-container" style="max-width:min(500px,95vw);width:100%;margin:1rem auto;padding:1rem;">
+                <h1 style="font-family:'Comic Sans MS',cursive;font-size:clamp(1.2rem,5vw,1.8rem);color:#f875b9;">Find Identical Pair</h1>
+                <p style="font-size:clamp(0.9rem,3vw,1rem);color:#396485;">Stage ${stageIndex + 1} of 4 - Select the 2 same images (10 pts)</p>
+                <div id="fip-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:20px 0;"></div>
+                <button id="fip-back-btn" class="small-btn">⟵ Back</button>
+            </div>
+        `;
+
+        const grid = document.getElementById('fip-grid');
+        selected = [];
+
+        shuffled.forEach((src, idx) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'aspect-ratio:1;border-radius:12px;cursor:pointer;border:3px solid transparent;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f5f5f5;min-height:100px;';
+            const img = document.createElement('img');
+            img.src = stage.folder + src;
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+            img.onerror = () => { img.style.display = 'none'; };
+            div.appendChild(img);
+            div.dataset.src = src;
+            div.onclick = () => {
+                if (selected.length >= 2) return;
+                div.style.borderColor = '#f875b9';
+                selected.push({ el: div, src });
+                if (selected.length === 2) {
+                    if (selected[0].src === selected[1].src) {
+                        score += 10;
+                        setTimeout(() => { stageIndex++; runStage(); }, 500);
+                    } else {
+                        selected.forEach(s => s.el.style.borderColor = 'red');
+                        setTimeout(() => {
+                            selected.forEach(s => { s.el.style.borderColor = 'transparent'; });
+                            selected = [];
+                        }, 800);
+                    }
+                }
+            };
+            grid.appendChild(div);
+        });
+
+        document.getElementById('fip-back-btn').onclick = () => {
+            finished = true;
+            hide(gameArea);
+            updateGamesList();
+            show(levelGames);
+        };
+    }
+
+    runStage();
+}
+
+// ================= CONNECT LETTERS GAME (Level 4, Game 3) – Geoboard style =================
+function connectLettersGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    const COLS = 9;
+    const ROWS = 11;
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    let currentLetterIndex = 0;
+    let score = 0;
+    let timeLeft = 180; // 3 min
+    let timerInterval;
+    let finished = false;
+
+    const canvasSize = Math.min(320, Math.min(window.innerWidth, window.innerHeight) * 0.85);
+
+    function buildUI() {
+        const letter = letters[currentLetterIndex] || letters[letters.length - 1];
+        gameArea.innerHTML = `
+            <div id="cl-container" class="game-container" style="max-width:min(500px,95vw);width:100%;margin:1rem auto;padding:1rem;box-sizing:border-box;">
+                <h1 style="font-family:'Comic Sans MS',cursive;font-size:clamp(1.2rem,5vw,1.6rem);color:#f875b9;">Geoboard Letters</h1>
+                <p style="font-size:clamp(1rem,4vw,1.3rem);color:#396485;">Write letter: <strong id="cl-letter">${letter}</strong></p>
+                <p style="font-size:clamp(0.85rem,2.5vw,0.95rem);">Score: <span id="cl-score">${score}</span> &nbsp; Time: <span id="cl-timer">03:00</span> &nbsp; <button id="cl-clear-btn" type="button" class="small-btn" style="padding:4px 10px;">Clear</button></p>
+                <div style="display:flex;justify-content:center;margin:12px 0;">
+                    <canvas id="cl-canvas" width="${canvasSize}" height="${canvasSize}" style="width:min(320px,85vw);height:min(320px,85vw);touch-action:none;display:block;border:2px solid #333;border-radius:8px;background:#fff;"></canvas>
+                </div>
+                <div style="margin-top:12px;">
+                    <button id="cl-next-btn" type="button" class="small-btn" style="margin-right:8px;">Next (10 pts)</button>
+                    <button id="cl-back-btn" class="small-btn">⟵ Back</button>
+                </div>
+            </div>
+        `;
+    }
+
+    buildUI();
+
+    const canvas = document.getElementById('cl-canvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const pad = 20;
+    const stepX = (w - 2 * pad) / (COLS - 1);
+    const stepY = (h - 2 * pad) / (ROWS - 1);
+
+    const pegs = [];
+    for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+            pegs.push({
+                x: pad + col * stepX,
+                y: pad + row * stepY,
+                col, row
+            });
+        }
+    }
+
+    const lines = []; // { from: pegIndex, to: pegIndex }
+    let dragFrom = -1;
+    let dragX = 0, dragY = 0;
+
+    function xyToPeg(x, y) {
+        let best = -1, bestD = 999;
+        for (let i = 0; i < pegs.length; i++) {
+            const d = Math.hypot(pegs[i].x - x, pegs[i].y - y);
+            if (d < bestD && d < Math.min(stepX, stepY) * 0.6) {
+                bestD = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    function getCanvasXY(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = w / rect.width;
+        const scaleY = h / rect.height;
+        const clientX = e.clientX != null ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY != null ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function redraw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#f875b9';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        lines.forEach(({ from, to }) => {
+            ctx.beginPath();
+            ctx.moveTo(pegs[from].x, pegs[from].y);
+            ctx.lineTo(pegs[to].x, pegs[to].y);
+            ctx.stroke();
+        });
+        if (dragFrom >= 0) {
+            ctx.beginPath();
+            ctx.moveTo(pegs[dragFrom].x, pegs[dragFrom].y);
+            ctx.lineTo(dragX, dragY);
+            ctx.strokeStyle = 'rgba(248,117,185,0.6)';
+            ctx.stroke();
+        }
+        const r = Math.min(stepX, stepY) * 0.2;
+        pegs.forEach((p) => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            ctx.strokeStyle = '#111';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        });
+    }
+
+    function onPointerDown(e) {
+        if (finished) return;
+        e.preventDefault();
+        const { x, y } = getCanvasXY(e);
+        const idx = xyToPeg(x, y);
+        if (idx >= 0) dragFrom = idx;
+    }
+
+    function onPointerMove(e) {
+        if (finished) return;
+        const { x, y } = getCanvasXY(e);
+        dragX = x;
+        dragY = y;
+        if (dragFrom >= 0) redraw();
+    }
+
+    function onPointerUp(e) {
+        if (finished) return;
+        const { x, y } = getCanvasXY(e);
+        const idx = xyToPeg(x, y);
+        if (dragFrom >= 0 && idx >= 0 && idx !== dragFrom) {
+            const key1 = [dragFrom, idx].sort((a,b)=>a-b).join(',');
+            const exists = lines.some(l => {
+                const k = [l.from, l.to].sort((a,b)=>a-b).join(',');
+                return k === key1;
+            });
+            if (!exists) lines.push({ from: dragFrom, to: idx });
+        }
+        dragFrom = -1;
+        redraw();
+    }
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointerleave', () => { dragFrom = -1; redraw(); });
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
+    document.getElementById('cl-clear-btn').onclick = () => {
+        lines.length = 0;
+        redraw();
+    };
+
+    document.getElementById('cl-next-btn').onclick = () => {
+        if (finished) return;
+        score += 10;
+        const scoreEl = document.getElementById('cl-score');
+        if (scoreEl) scoreEl.textContent = score;
+        lines.length = 0;
+        currentLetterIndex++;
+        if (currentLetterIndex < letters.length) {
+            const letterEl = document.getElementById('cl-letter');
+            if (letterEl) letterEl.textContent = letters[currentLetterIndex];
+        } else {
+            currentLetterIndex = letters.length - 1;
+            const letterEl = document.getElementById('cl-letter');
+            if (letterEl) letterEl.textContent = letters[currentLetterIndex] + ' (done – keep drawing or wait for time)';
+        }
+        redraw();
+    };
+
+    redraw();
+
+    timerInterval = setInterval(() => {
+        if (finished) return;
+        timeLeft--;
+        if (timeLeft <= 0) {
+            finished = true;
+            clearInterval(timerInterval);
+            const timerEl = document.getElementById('cl-timer');
+            if (timerEl) timerEl.textContent = '00:00';
+            setTimeout(() => showGameResult(score, "Time's up!", startGameCallback), 800);
+            return;
+        }
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        const timerEl = document.getElementById('cl-timer');
+        if (timerEl) timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+
+    document.getElementById('cl-back-btn').onclick = () => {
+        finished = true;
+        clearInterval(timerInterval);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+}
+
+// ================ Override showGiftScreen for 4 levels ================
 
 function showGiftScreen() {
     hide(levelGames, gameResult, gameArea);
     show(giftScreen);
     let total = levelScores[currentLevel].reduce((a,b)=>a+b,0);
 
-    // Animation for both levels
-    let animationHTML = '';
-    if (currentLevel === 0 || currentLevel === 1) {
-        animationHTML = `<img src="Animation - 1752044468269.gif" style="width:120px;display:block;margin:16px auto 2px auto;" alt="gift">`;
-    }
-
-    giftMsg.innerHTML = animationHTML + `<b>Your total score: ${total}</b><br/>Enjoy your reward! 🎁<br/>`;
+    giftMsg.innerHTML = `<img src="Animation - 1752044468269.gif" style="width:120px;display:block;margin:16px auto 2px auto;" alt="gift"><b>Your total score: ${total}</b><br/>Enjoy your reward! 🎁<br/>`;
     playGiftSound();
 
     continueBtn.onclick = () => {
         hide(giftScreen);
-        if(currentLevel===0){
-            level2Btn.disabled = false;
+        if(currentLevel === 0){
             openLevel(1);
-        }else{
+        } else if(currentLevel === 1){
+            level3Btn.disabled = false;
+            openLevel(2);
+        } else if(currentLevel === 2){
+            if (level4Btn) level4Btn.disabled = false;
+            openLevel(3);
+        } else {
             // All levels finished: compute full session results and send to Lazy-eye Firebase
             try {
                 const gamesSummary = [];
