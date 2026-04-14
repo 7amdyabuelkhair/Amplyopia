@@ -81,7 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
         'opt-lazy-eye': () => { window.location.href = 'lazytest/index.html'; },
         'opt-vision-test': () => { window.location.href = 'vision-test.html'; },
         'opt-guidelines': () => { window.location.href = 'guidelines.html'; },
-        'opt-report': () => { window.location.href = 'report.html'; }
+        'opt-report': () => { window.location.href = 'report.html'; },
+        'opt-red-blue': () => {
+            const ok = window.confirm('You must wear red-blue glasses before starting these exercises. Continue?');
+            if (ok) window.location.href = 'red-blue/index.html';
+        }
     };
     
     Object.keys(routes).forEach((id) => {
