@@ -31,13 +31,21 @@ const levels = [
             { name: "Find Identical Pair", play: findIdenticalPairGame },
             { name: "Connect Letters", play: connectLettersGame }
         ]
+    },
+    {
+        name: "Lazy Eye Training",
+        games: [
+            { name: "Spot the Difference", play: spotTheDifferenceGame },
+            { name: "Maze Game", play: mazeGame },
+            { name: "Snake Game", play: snakeGame }
+        ]
     }
 ];
 
 let currentLevel = 0;
 let currentGame = 0;
-let levelScores = [[], [], [], []];
-let completedGames = [[], [], [], []];
+let levelScores = levels.map(() => []);
+let completedGames = levels.map(() => []);
 
 /* ======================== ELEMENTS ========================== */
 const mainMenu = document.getElementById('main-menu');
@@ -64,6 +72,7 @@ const level1Btn = document.getElementById('level1-btn');
 const level2Btn = document.getElementById('level2-btn');
 const level3Btn = document.getElementById('level3-btn');
 const level4Btn = document.getElementById('level4-btn');
+const lazyEyeBtn = document.getElementById('lazy-eye-btn');
 
 function show(el) { if (el) el.classList.remove('hidden'); }
 function hide(...els) { els.forEach(e => e.classList.add('hidden')); }
@@ -73,6 +82,7 @@ level1Btn.onclick = () => openLevel(0);
 level2Btn.onclick = () => openLevel(1);
 level3Btn.onclick = () => openLevel(2);
 if (level4Btn) level4Btn.onclick = () => openLevel(3);
+if (lazyEyeBtn) lazyEyeBtn.onclick = () => openLevel(4);
 
 function openLevel(lvl) {
     currentLevel = lvl;
@@ -150,6 +160,8 @@ function showGiftScreen() {
         } else if(currentLevel === 2){
             if (level4Btn) level4Btn.disabled = false;
             openLevel(3);
+        } else if (currentLevel === 3) {
+            openLevel(4);
         } else {
             show(finalScreen);
             finalScore.innerHTML = `<b>Total Score: ${levelScores.flat().reduce((a,b)=>a+b,0)}</b>`;
@@ -164,8 +176,8 @@ function playGiftSound() {
 playAgainBtn.onclick = () => {
     currentLevel = 0;
     currentGame = 0;
-    levelScores = [[],[],[],[]];
-    completedGames = [[],[],[],[]];
+    levelScores = levels.map(() => []);
+    completedGames = levels.map(() => []);
     level2Btn.disabled = false;
     level3Btn.disabled = true;
     if (level4Btn) level4Btn.disabled = true;
@@ -2091,6 +2103,965 @@ function connectLettersGame(startGameCallback) {
     };
 }
 
+// ================= SPOT THE DIFFERENCE (Lazy Eye Training) =================
+function spotTheDifferenceGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+    const sourceImage = "img/level5/Spot_the_difference.png";
+    const cols = 14;
+    const rows = 8;
+    const targetNumbers = [
+        2, 5, 16, 27, 28, 32, 34, 35, 40, 41, 54, 55, 56, 70, 38, 52, 60, 61,
+        67, 81, 80, 75, 76, 77, 78, 79, 98, 102, 109, 110
+    ];
+    const mergedGroups = [
+        [2, 16],
+        [27, 28],
+        [34, 35],
+        [40, 41, 54, 55],
+        [56, 70],
+        [38, 52],
+        [75, 76, 77, 78, 79],
+        [67, 81],
+        [109, 110]
+    ];
+    function numberToKey(n) {
+        const idx = n - 1;
+        const x = idx % cols;
+        const y = Math.floor(idx / cols);
+        return `${x}-${y}`;
+    }
+    const keyToGroupId = new Map();
+    const answerGroups = [];
+    const groupById = new Map();
+    let groupCounter = 1;
+    mergedGroups.forEach((group) => {
+        const id = `g${groupCounter++}`;
+        const keys = group.map(numberToKey);
+        keys.forEach((key) => keyToGroupId.set(key, id));
+        const groupObj = { id, keys };
+        answerGroups.push(groupObj);
+        groupById.set(id, groupObj);
+    });
+    const groupedNumbers = new Set(mergedGroups.flat());
+    targetNumbers.filter((n) => !groupedNumbers.has(n)).forEach((n) => {
+        const id = `g${groupCounter++}`;
+        const key = numberToKey(n);
+        keyToGroupId.set(key, id);
+        const groupObj = { id, keys: [key] };
+        answerGroups.push(groupObj);
+        groupById.set(id, groupObj);
+    });
+    const allAnswerGroupIds = new Set(answerGroups.map((g) => g.id));
+    const foundGroups = new Set();
+    let currentScore = 0;
+    let timeLeft = 60;
+    let timerHandle = null;
+    let gameEnded = false;
+    let gameStarted = false;
+    let gridEnabled = false;
+
+    gameArea.innerHTML = `
+        <div id="std-game" class="std-wrap">
+            <div class="std-header">
+                <h1>Spot the Difference</h1>
+                <p>Photo mode - click the correct transparent square cells.</p>
+                <div class="std-stats">
+                    <span id="std-progress">0/${allAnswerGroupIds.size} differences found</span>
+                    <span id="std-score">Score: 0</span>
+                    <span id="std-time">Time: 01:00</span>
+                </div>
+            </div>
+            <div class="std-toolbar">
+                <button id="std-start-btn" class="small-btn" type="button">Start</button>
+                <button id="std-back-btn" class="small-btn" type="button">⟵ Back</button>
+            </div>
+            <div id="std-grid" class="std-grid">
+                <div class="std-panel">
+                    <h3>Image A</h3>
+                    <div id="std-left" class="std-scene std-photo std-left"></div>
+                </div>
+                <div class="std-panel">
+                    <h3>Image B</h3>
+                    <div id="std-right" class="std-scene std-photo std-right"></div>
+                </div>
+            </div>
+            <div id="std-cover" style="position:relative;">
+                
+            </div>
+            <p id="std-feedback" class="std-feedback">Transparent square layer is visible for fixing alignment.</p>
+        </div>
+    `;
+
+    const photoLeftScene = document.getElementById("std-left");
+    const photoRightScene = document.getElementById("std-right");
+    const photoProgressEl = document.getElementById("std-progress");
+    const photoScoreEl = document.getElementById("std-score");
+    const photoTimeEl = document.getElementById("std-time");
+    const photoFeedbackEl = document.getElementById("std-feedback");
+    const startBtn = document.getElementById("std-start-btn");
+    const cover = document.getElementById("std-cover");
+
+    function renderSpotGrid(sceneEl) {
+        sceneEl.style.setProperty("--std-bg-url", `url("${sourceImage}")`);
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const cell = document.createElement("button");
+                cell.type = "button";
+                cell.className = "std-cell";
+                const key = `${x}-${y}`;
+                const number = (y * cols) + x + 1;
+                cell.dataset.key = key;
+                cell.dataset.num = String(number);
+                cell.dataset.groupId = keyToGroupId.get(key) || "";
+                cell.textContent = "";
+                cell.addEventListener("click", () => handleSpotClick(cell, key));
+                sceneEl.appendChild(cell);
+            }
+        }
+    }
+
+    function keyToPoint(key) {
+        const [xStr, yStr] = key.split("-");
+        return { x: Number(xStr), y: Number(yStr) };
+    }
+
+    function chooseMiddleKey(keys) {
+        if (keys.length <= 1) return keys[0];
+        const points = keys.map(keyToPoint);
+        const meanX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+        const meanY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+        let bestKey = keys[0];
+        let bestDistance = Number.POSITIVE_INFINITY;
+        keys.forEach((key, idx) => {
+            const p = points[idx];
+            const dist = Math.hypot(p.x - meanX, p.y - meanY);
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                bestKey = key;
+            }
+        });
+        return bestKey;
+    }
+
+    function markSpotFoundByGroup(groupId) {
+        const group = groupById.get(groupId);
+        if (!group) return;
+        document.querySelectorAll(`.std-cell[data-group-id="${groupId}"]`).forEach((cell) => {
+            cell.classList.add("std-cell-found");
+            cell.disabled = true;
+            cell.innerHTML = "";
+        });
+        const middleKey = chooseMiddleKey(group.keys);
+        document.querySelectorAll(`.std-cell[data-key="${middleKey}"]`).forEach((cell) => {
+            cell.innerHTML = `<span class="std-correct-icon">✓</span>`;
+        });
+    }
+
+    function updateSpotHud() {
+        photoProgressEl.textContent = `${foundGroups.size}/${allAnswerGroupIds.size} differences found`;
+        photoScoreEl.textContent = `Score: ${currentScore}`;
+        const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+        const ss = String(timeLeft % 60).padStart(2, "0");
+        photoTimeEl.textContent = `Time: ${mm}:${ss}`;
+    }
+
+    function finishSpotGame() {
+        if (gameEnded) return;
+        gameEnded = true;
+        clearInterval(timerHandle);
+        const ratioScore = Math.round((currentScore / allAnswerGroupIds.size) * 100);
+        showGameResult(
+            ratioScore,
+            `You found ${currentScore}/${allAnswerGroupIds.size}.`,
+            startGameCallback
+        );
+    }
+
+    function registerSpotWrongClick(cell) {
+        if (gameEnded) return;
+        if (cell) cell.classList.add("std-cell-wrong");
+        setTimeout(() => cell && cell.classList.remove("std-cell-wrong"), 500);
+        photoFeedbackEl.textContent = "Not a correct square.";
+        photoFeedbackEl.style.color = "#c62828";
+        updateSpotHud();
+    }
+
+    function handleSpotClick(cell, key) {
+        if (!gridEnabled) return;
+        if (gameEnded) return;
+        const groupId = keyToGroupId.get(key);
+        if (!groupId) return registerSpotWrongClick(cell);
+        if (foundGroups.has(groupId)) return;
+        foundGroups.add(groupId);
+        currentScore += 1;
+        markSpotFoundByGroup(groupId);
+        photoFeedbackEl.textContent = "Correct square!";
+        photoFeedbackEl.style.color = "#2e7d32";
+        updateSpotHud();
+        if (currentScore >= allAnswerGroupIds.size) setTimeout(finishSpotGame, 350);
+    }
+
+    updateSpotHud();
+    photoFeedbackEl.textContent = "Press Start to begin.";
+    photoFeedbackEl.style.color = "#355070";
+
+    startBtn.onclick = () => {
+        if (gameStarted || gameEnded) return;
+        gameStarted = true;
+        gridEnabled = true;
+        startBtn.disabled = true;
+        if (cover) cover.remove();
+        renderSpotGrid(photoLeftScene);
+        renderSpotGrid(photoRightScene);
+        photoFeedbackEl.textContent = "Find the differences now!";
+        photoFeedbackEl.style.color = "#2e7d32";
+        timerHandle = setInterval(() => {
+            if (gameEnded) return;
+            timeLeft = Math.max(0, timeLeft - 1);
+            updateSpotHud();
+            if (timeLeft === 0) finishSpotGame();
+        }, 1000);
+    };
+    document.getElementById("std-back-btn").onclick = () => {
+        clearInterval(timerHandle);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+    return;
+
+    const scenes = [
+        {
+            name: "Park Picnic",
+            bg: "linear-gradient(180deg, #8fd6ff 0%, #eaf8ff 42%, #7cc77a 42%, #5cad5a 100%)",
+            objects: [
+                { id: "sun", x: 12, y: 8, w: 60, h: 60, baseColor: "#ffd54f", diffColor: "#ffb300", change: "color" },
+                { id: "cloud", x: 32, y: 9, w: 88, h: 28, baseColor: "#f8fcff", diffColor: "#d4ecff", change: "color" },
+                { id: "tree", x: 72, y: 22, w: 40, h: 92, baseColor: "#2e7d32", diffColor: "#43a047", change: "size", scale: 1.2 },
+                { id: "ball", x: 18, y: 63, w: 34, h: 34, baseColor: "#ff7043", diffColor: "#8d6e63", change: "color" },
+                { id: "bench", x: 63, y: 67, w: 65, h: 18, baseColor: "#6d4c41", diffColor: "#4e342e", change: "shift", dx: 6, dy: -5 },
+                { id: "kite", x: 52, y: 17, w: 35, h: 35, baseColor: "#ff4081", diffColor: "#f50057", change: "size", scale: 0.8 },
+                { id: "flower", x: 39, y: 79, w: 22, h: 22, baseColor: "#ab47bc", diffColor: "#7b1fa2", change: "hide" },
+                { id: "bird", x: 83, y: 15, w: 26, h: 20, baseColor: "#5c6bc0", diffColor: "#3949ab", change: "shift", dx: -10, dy: 3 }
+            ]
+        },
+        {
+            name: "Playroom",
+            bg: "linear-gradient(180deg, #f5f3ff 0%, #f5f3ff 63%, #ffecb3 63%, #ffe082 100%)",
+            objects: [
+                { id: "lamp", x: 12, y: 12, w: 24, h: 54, baseColor: "#ffd54f", diffColor: "#ffca28", change: "color" },
+                { id: "shelf", x: 68, y: 12, w: 56, h: 78, baseColor: "#8d6e63", diffColor: "#6d4c41", change: "shift", dx: -7, dy: 2 },
+                { id: "blockA", x: 24, y: 67, w: 30, h: 30, baseColor: "#ef5350", diffColor: "#c62828", change: "size", scale: 1.25 },
+                { id: "blockB", x: 58, y: 70, w: 28, h: 28, baseColor: "#42a5f5", diffColor: "#1565c0", change: "color" },
+                { id: "teddy", x: 43, y: 46, w: 40, h: 44, baseColor: "#bcaaa4", diffColor: "#a1887f", change: "hide" },
+                { id: "car", x: 78, y: 74, w: 42, h: 22, baseColor: "#66bb6a", diffColor: "#388e3c", change: "shift", dx: -8, dy: -4 },
+                { id: "book", x: 70, y: 30, w: 20, h: 28, baseColor: "#ff7043", diffColor: "#d84315", change: "color" },
+                { id: "window", x: 34, y: 12, w: 28, h: 28, baseColor: "#90caf9", diffColor: "#42a5f5", change: "size", scale: 0.75 }
+            ]
+        },
+        {
+            name: "Underwater",
+            bg: "linear-gradient(180deg, #80deea 0%, #4dd0e1 48%, #006064 100%)",
+            objects: [
+                { id: "fish1", x: 15, y: 23, w: 34, h: 22, baseColor: "#ff7043", diffColor: "#d84315", change: "shift", dx: 8, dy: 0 },
+                { id: "fish2", x: 61, y: 30, w: 37, h: 24, baseColor: "#ab47bc", diffColor: "#8e24aa", change: "color" },
+                { id: "star", x: 75, y: 76, w: 26, h: 26, baseColor: "#ffd54f", diffColor: "#ffb300", change: "hide" },
+                { id: "plant1", x: 22, y: 66, w: 18, h: 42, baseColor: "#66bb6a", diffColor: "#2e7d32", change: "size", scale: 1.3 },
+                { id: "plant2", x: 41, y: 70, w: 16, h: 35, baseColor: "#26a69a", diffColor: "#00897b", change: "shift", dx: 5, dy: -3 },
+                { id: "bubble", x: 86, y: 24, w: 20, h: 20, baseColor: "#e1f5fe", diffColor: "#b3e5fc", change: "color" },
+                { id: "shell", x: 57, y: 83, w: 30, h: 17, baseColor: "#ffccbc", diffColor: "#ffab91", change: "size", scale: 0.72 },
+                { id: "crab", x: 8, y: 82, w: 36, h: 23, baseColor: "#ef5350", diffColor: "#b71c1c", change: "shift", dx: 9, dy: -4 }
+            ]
+        }
+    ];
+
+    const scene = scenes[Math.floor(Math.random() * scenes.length)];
+    const targetCount = 5 + Math.floor(Math.random() * 4);
+    const selectedDiffs = [...scene.objects].sort(() => Math.random() - 0.5).slice(0, targetCount);
+    const activeDiffIds = new Set(selectedDiffs.map(d => d.id));
+    const foundIds = new Set();
+
+    let wrongClicks = 0;
+    let hintsLeft = 3;
+    let easyMode = true;
+    let remainingSeconds = 150;
+    let timerInterval = null;
+    let hintFlashTimeout = null;
+
+    gameArea.innerHTML = `
+        <div id="std-game" class="std-wrap">
+            <div class="std-header">
+                <h1>Spot the Difference</h1>
+                <p>${scene.name} - Find all hidden differences.</p>
+                <div class="std-stats">
+                    <span id="std-progress">0/${targetCount} differences found</span>
+                    <span id="std-timer">Time: 02:30</span>
+                    <span id="std-penalty">Penalties: 0</span>
+                </div>
+            </div>
+            <div class="std-toolbar">
+                <button id="std-mode-btn" class="small-btn" type="button">Mode: Easy</button>
+                <button id="std-hint-btn" class="small-btn" type="button">Hint (${hintsLeft})</button>
+                <button id="std-focus-btn" class="small-btn" type="button">Focus Zone</button>
+                <button id="std-back-btn" class="small-btn" type="button">⟵ Back</button>
+            </div>
+            <div id="std-grid" class="std-grid">
+                <div class="std-panel">
+                    <h3>Image A</h3>
+                    <div id="std-left" class="std-scene"></div>
+                </div>
+                <div class="std-panel">
+                    <h3>Image B</h3>
+                    <div id="std-right" class="std-scene std-blur"></div>
+                </div>
+            </div>
+            <p id="std-feedback" class="std-feedback">Tap differences in either image.</p>
+        </div>
+    `;
+
+    const leftScene = document.getElementById("std-left");
+    const rightScene = document.getElementById("std-right");
+    const progressEl = document.getElementById("std-progress");
+    const timerEl = document.getElementById("std-timer");
+    const penaltyEl = document.getElementById("std-penalty");
+    const feedbackEl = document.getElementById("std-feedback");
+    const hintBtn = document.getElementById("std-hint-btn");
+    const modeBtn = document.getElementById("std-mode-btn");
+    const focusBtn = document.getElementById("std-focus-btn");
+
+    function createObjectNode(obj, isRightScene) {
+        const node = document.createElement("div");
+        node.className = "std-object";
+        node.dataset.id = obj.id;
+
+        let x = obj.x;
+        let y = obj.y;
+        let w = obj.w;
+        let h = obj.h;
+        let color = obj.baseColor;
+        let hidden = false;
+
+        if (isRightScene && activeDiffIds.has(obj.id)) {
+            if (obj.change === "color") color = obj.diffColor;
+            if (obj.change === "size") {
+                w = Math.max(14, Math.floor(w * (obj.scale || 1.15)));
+                h = Math.max(14, Math.floor(h * (obj.scale || 1.15)));
+            }
+            if (obj.change === "shift") {
+                x = Math.max(2, Math.min(90, x + (obj.dx || 5)));
+                y = Math.max(2, Math.min(90, y + (obj.dy || -3)));
+            }
+            if (obj.change === "hide") hidden = true;
+        }
+
+        if (hidden) {
+            node.style.display = "none";
+        } else {
+            node.style.left = `${x}%`;
+            node.style.top = `${y}%`;
+            node.style.width = `${w}px`;
+            node.style.height = `${h}px`;
+            node.style.background = color;
+        }
+
+        if (obj.id.includes("sun") || obj.id.includes("bubble")) node.style.borderRadius = "50%";
+        else if (obj.id.includes("cloud")) node.style.borderRadius = "20px";
+        else node.style.borderRadius = "8px";
+
+        return node;
+    }
+
+    function renderScenes() {
+        leftScene.style.background = scene.bg;
+        rightScene.style.background = scene.bg;
+        leftScene.innerHTML = "";
+        rightScene.innerHTML = "";
+        scene.objects.forEach(obj => {
+            leftScene.appendChild(createObjectNode(obj, false));
+            rightScene.appendChild(createObjectNode(obj, true));
+        });
+    }
+
+    function markDifference(id) {
+        const leftNode = leftScene.querySelector(`[data-id="${id}"]`);
+        const rightNode = rightScene.querySelector(`[data-id="${id}"]`);
+        [leftNode, rightNode].forEach((node) => {
+            if (!node) return;
+            node.classList.add("std-found");
+            const marker = document.createElement("span");
+            marker.className = "std-marker";
+            marker.textContent = "✓";
+            node.appendChild(marker);
+        });
+    }
+
+    function updateHud() {
+        progressEl.textContent = `${foundIds.size}/${targetCount} differences found`;
+        penaltyEl.textContent = `Penalties: ${wrongClicks}`;
+        hintBtn.textContent = `Hint (${hintsLeft})`;
+    }
+
+    function formatTime(value) {
+        const mins = Math.floor(value / 60);
+        const secs = value % 60;
+        return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    function finishGame() {
+        clearInterval(timerInterval);
+        clearTimeout(hintFlashTimeout);
+
+        const baseScore = foundIds.size * 15;
+        const timeBonus = easyMode ? Math.max(0, 40 - wrongClicks * 3) : Math.max(0, remainingSeconds);
+        const penalty = wrongClicks * 4;
+        const hintPenalty = (3 - hintsLeft) * 3;
+        const finalScore = Math.max(0, baseScore + timeBonus - penalty - hintPenalty);
+
+        showGameResult(finalScore, foundIds.size === targetCount ? "Excellent focus!" : "Nice effort!", startGameCallback);
+    }
+
+    function registerWrongClick() {
+        wrongClicks++;
+        feedbackEl.textContent = "Not a difference. Small penalty applied.";
+        feedbackEl.style.color = "#c62828";
+        if (!easyMode) {
+            remainingSeconds = Math.max(0, remainingSeconds - 3);
+            timerEl.textContent = `Time: ${formatTime(remainingSeconds)}`;
+            if (remainingSeconds <= 0) finishGame();
+        }
+        updateHud();
+    }
+
+    function handleSelection(e) {
+        const object = e.target.closest(".std-object");
+        if (!object) return registerWrongClick();
+        const id = object.dataset.id;
+        if (!activeDiffIds.has(id) || foundIds.has(id)) return registerWrongClick();
+
+        foundIds.add(id);
+        markDifference(id);
+        feedbackEl.textContent = "Great! You found a difference.";
+        feedbackEl.style.color = "#2e7d32";
+        const snd = new Audio("rightanswer-95219.mp3");
+        snd.play().catch(() => {});
+        updateHud();
+
+        if (foundIds.size === targetCount) {
+            setTimeout(finishGame, 350);
+        }
+    }
+
+    function activateHint() {
+        if (hintsLeft <= 0) return;
+        const remaining = selectedDiffs.filter(d => !foundIds.has(d.id));
+        if (!remaining.length) return;
+
+        hintsLeft--;
+        const target = remaining[Math.floor(Math.random() * remaining.length)];
+        const leftNode = leftScene.querySelector(`[data-id="${target.id}"]`);
+        const rightNode = rightScene.querySelector(`[data-id="${target.id}"]`);
+        [leftNode, rightNode].forEach((node) => node && node.classList.add("std-hint"));
+        clearTimeout(hintFlashTimeout);
+        hintFlashTimeout = setTimeout(() => {
+            [leftNode, rightNode].forEach((node) => node && node.classList.remove("std-hint"));
+        }, 1300);
+        feedbackEl.textContent = "Hint used. Focus around the highlighted zone.";
+        feedbackEl.style.color = "#5e35b1";
+        updateHud();
+    }
+
+    function showFocusZone() {
+        const remaining = selectedDiffs.filter(d => !foundIds.has(d.id));
+        const target = remaining[Math.floor(Math.random() * remaining.length)];
+        if (!target) return;
+        const zone = document.createElement("div");
+        zone.className = "std-focus-zone";
+        zone.style.left = `${target.x - 6}%`;
+        zone.style.top = `${target.y - 6}%`;
+        zone.style.width = "64px";
+        zone.style.height = "64px";
+        rightScene.appendChild(zone);
+        setTimeout(() => zone.remove(), 1100);
+    }
+
+    function toggleMode() {
+        easyMode = !easyMode;
+        modeBtn.textContent = easyMode ? "Mode: Easy" : "Mode: Challenge";
+        rightScene.classList.toggle("std-blur", easyMode);
+        timerEl.style.display = easyMode ? "none" : "inline";
+        feedbackEl.textContent = easyMode ? "Easy mode: no timer." : "Challenge mode: beat the clock.";
+        feedbackEl.style.color = "#1d3557";
+    }
+
+    renderScenes();
+    updateHud();
+    timerEl.style.display = "none";
+    leftScene.addEventListener("click", handleSelection);
+    rightScene.addEventListener("click", handleSelection);
+
+    modeBtn.onclick = toggleMode;
+    hintBtn.onclick = activateHint;
+    focusBtn.onclick = showFocusZone;
+    document.getElementById("std-back-btn").onclick = () => {
+        clearInterval(timerInterval);
+        clearTimeout(hintFlashTimeout);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+
+    timerInterval = setInterval(() => {
+        if (easyMode) return;
+        remainingSeconds = Math.max(0, remainingSeconds - 1);
+        timerEl.textContent = `Time: ${formatTime(remainingSeconds)}`;
+        if (remainingSeconds <= 0) finishGame();
+    }, 1000);
+}
+
+// ================= MAZE GAME (Lazy Eye Training) =================
+function mazeGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    const STAGES = [
+        {
+            name: "Stage 1",
+            time: 90,
+            maze: [
+                "111111111111",
+                "100000100001",
+                "101110101101",
+                "100010100001",
+                "111010111101",
+                "100010000101",
+                "101111110101",
+                "101000010001",
+                "101011011101",
+                "100000000001",
+                "111111111111"
+            ]
+        },
+        {
+            name: "Stage 2",
+            time: 75,
+            maze: [
+                "11111111111111",
+                "10000000100001",
+                "10111110101101",
+                "10100010100001",
+                "10101110111101",
+                "10101000100001",
+                "10101111101111",
+                "10100000100001",
+                "10111110111001",
+                "10000010001001",
+                "11111010101001",
+                "10000000100001",
+                "11111111111111"
+            ]
+        },
+        {
+            name: "Stage 3",
+            time: 60,
+            maze: [
+                "1111111111111111",
+                "1000000000100001",
+                "1011111110101111",
+                "1010000010100001",
+                "1010111010111101",
+                "1010101010000101",
+                "1010101011110101",
+                "1010001000010101",
+                "1011101111010101",
+                "1000101000010101",
+                "1110101011110101",
+                "1000100010000101",
+                "1011111010111101",
+                "1000000010000001",
+                "1111111111111111"
+            ]
+        }
+    ];
+
+    let stageIndex = 0;
+    let maze = STAGES[stageIndex].maze;
+    let rows = maze.length;
+    let cols = maze[0].length;
+    let cell = 32;
+    let player = { r: 1, c: 1 };
+    let goal = { r: rows - 2, c: cols - 2 };
+    let moves = 0;
+    let totalScore = 0;
+    let timeLeft = STAGES[stageIndex].time;
+    let started = false;
+    let finished = false;
+    let timer = null;
+
+    gameArea.innerHTML = `
+        <div id="mz-wrap" style="max-width:min(740px,96vw);margin:1rem auto;padding:1rem;background:#ffe7f5;border-radius:18px;border:3px solid #f39ccd;box-shadow:0 8px 20px rgba(192,106,160,0.22);text-align:center;">
+            <h1 style="margin:0 0 .6rem 0;color:#a22f7f;font-family:'Comic Sans MS',cursive;">Navigate the Labyrinth</h1>
+            <div id="mz-stage" style="font-weight:bold;color:#7a2f66;margin-bottom:.4rem;">${STAGES[0].name} of ${STAGES.length}</div>
+            <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-bottom:.7rem;">
+                <button id="mz-start" class="small-btn" style="background:#b64b98;color:#fff;">Start</button>
+                <button id="mz-up" class="small-btn" style="background:#e36e3b;color:#fff;">Up</button>
+                <button id="mz-down" class="small-btn" style="background:#e36e3b;color:#fff;">Down</button>
+                <button id="mz-right" class="small-btn" style="background:#e36e3b;color:#fff;">Right</button>
+                <button id="mz-left" class="small-btn" style="background:#e36e3b;color:#fff;">Left</button>
+            </div>
+            <div style="display:flex;justify-content:center;gap:1rem;font-weight:bold;color:#7a2f66;margin-bottom:.6rem;">
+                <span id="mz-moves">Moves: 0</span>
+                <span id="mz-time">Time: ${STAGES[0].time}s</span>
+                <span id="mz-score">Score: 0</span>
+            </div>
+            <canvas id="mz-canvas" width="${cols * cell}" height="${rows * cell}" style="width:min(${cols * cell}px,90vw);height:auto;border-radius:12px;border:4px solid #7f5d6f;background:#8cab4b;"></canvas>
+            <div style="margin-top:.8rem;">
+                <button id="mz-back" class="small-btn">⟵ Back</button>
+            </div>
+        </div>
+    `;
+
+    const canvas = document.getElementById("mz-canvas");
+    const ctx = canvas.getContext("2d");
+    const stageEl = document.getElementById("mz-stage");
+    const movesEl = document.getElementById("mz-moves");
+    const timeEl = document.getElementById("mz-time");
+    const scoreEl = document.getElementById("mz-score");
+
+    function setupStage(idx) {
+        stageIndex = idx;
+        maze = STAGES[stageIndex].maze;
+        rows = maze.length;
+        cols = maze[0].length;
+        cell = Math.max(24, Math.floor(500 / cols));
+        canvas.width = cols * cell;
+        canvas.height = rows * cell;
+        canvas.style.width = `min(${cols * cell}px,90vw)`;
+        player = { r: 1, c: 1 };
+        goal = { r: rows - 2, c: cols - 2 };
+        moves = 0;
+        timeLeft = STAGES[stageIndex].time;
+        started = false;
+        clearInterval(timer);
+        stageEl.textContent = `${STAGES[stageIndex].name} of ${STAGES.length}`;
+        movesEl.textContent = "Moves: 0";
+        timeEl.textContent = `Time: ${timeLeft}s`;
+        scoreEl.textContent = `Score: ${totalScore}`;
+        draw();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (maze[r][c] === "1") {
+                    ctx.fillStyle = "#1f8f2e";
+                    ctx.fillRect(c * cell, r * cell, cell, cell);
+                } else {
+                    ctx.fillStyle = "#86aa4a";
+                    ctx.fillRect(c * cell, r * cell, cell, cell);
+                }
+            }
+        }
+        ctx.fillStyle = "#ff0000";
+        ctx.beginPath();
+        ctx.arc(player.c * cell + cell / 2, player.r * cell + cell / 2, cell * 0.33, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#1a36ff";
+        ctx.beginPath();
+        ctx.arc(goal.c * cell + cell / 2, goal.r * cell + cell / 2, cell * 0.33, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function endGame(win) {
+        if (finished) return;
+        clearInterval(timer);
+        if (!win) {
+            finished = true;
+            showGameResult(Math.round(totalScore), "Time's up!", startGameCallback);
+            return;
+        }
+
+        const stageScore = Math.max(10, 120 - moves - (STAGES[stageIndex].time - timeLeft));
+        totalScore += Math.round(stageScore);
+        scoreEl.textContent = `Score: ${totalScore}`;
+
+        if (stageIndex < STAGES.length - 1) {
+            setupStage(stageIndex + 1);
+            return;
+        }
+
+        finished = true;
+        showGameResult(Math.round(totalScore), "All 3 maze stages completed!", startGameCallback);
+    }
+
+    function step(dr, dc) {
+        if (!started || finished) return;
+        const nr = player.r + dr;
+        const nc = player.c + dc;
+        if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) return;
+        if (maze[nr][nc] === "1") return;
+        player = { r: nr, c: nc };
+        moves++;
+        movesEl.textContent = `Moves: ${moves}`;
+        draw();
+        if (player.r === goal.r && player.c === goal.c) endGame(true);
+    }
+
+    function startMaze() {
+        if (started || finished) return;
+        started = true;
+        clearInterval(timer);
+        timer = setInterval(() => {
+            if (finished) return;
+            timeLeft--;
+            timeEl.textContent = `Time: ${timeLeft}s`;
+            if (timeLeft <= 0) endGame(false);
+        }, 1000);
+    }
+
+    document.getElementById("mz-start").onclick = startMaze;
+    document.getElementById("mz-up").onclick = () => step(-1, 0);
+    document.getElementById("mz-down").onclick = () => step(1, 0);
+    document.getElementById("mz-right").onclick = () => step(0, 1);
+    document.getElementById("mz-left").onclick = () => step(0, -1);
+    document.getElementById("mz-back").onclick = () => {
+        clearInterval(timer);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+
+    window.addEventListener("keydown", function onMazeKey(e) {
+        if (finished || gameArea.classList.contains("hidden")) {
+            window.removeEventListener("keydown", onMazeKey);
+            return;
+        }
+        if (e.key === "ArrowUp") step(-1, 0);
+        if (e.key === "ArrowDown") step(1, 0);
+        if (e.key === "ArrowRight") step(0, 1);
+        if (e.key === "ArrowLeft") step(0, -1);
+    });
+
+    setupStage(0);
+}
+
+// ================= SNAKE GAME (Lazy Eye Training) =================
+function snakeGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    const gridSize = 16;
+    const cellSize = 24;
+    let snake = [{ x: 5, y: 8 }, { x: 4, y: 8 }, { x: 3, y: 8 }];
+    let direction = { x: 1, y: 0 };
+    let nextDirection = { x: 1, y: 0 };
+    let food = { x: 10, y: 8 };
+    let timeLeft = 60;
+    let gameOver = false;
+    let started = false;
+    let moveTimer = null;
+    let clockTimer = null;
+    let speedMs = 190;
+
+    gameArea.innerHTML = `
+        <div style="max-width:min(680px,95vw);margin:1rem auto;padding:1rem;background:#ffe9f6;border:3px solid #f2a2cf;border-radius:16px;box-shadow:0 8px 20px rgba(214,123,175,0.25);text-align:center;overflow:hidden;">
+            <h1 style="margin:.2rem 0 .6rem 0;color:#9d2d79;font-family:'Comic Sans MS',cursive;">Snake Game</h1>
+            <div style="display:flex;justify-content:center;gap:1.2rem;font-weight:bold;color:#7a2f66;margin-bottom:.6rem;">
+                <span id="sn-length">Length: ${snake.length}</span>
+                <span id="sn-time">Time: 60s</span>
+                <span id="sn-speed">Speed: 1x</span>
+            </div>
+            <div class="sn-top-controls" style="display:flex;justify-content:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem;">
+                <button id="sn-start" class="small-btn" style="background:#b64b98;color:#fff;">Start</button>
+            </div>
+            <canvas id="sn-canvas" width="${gridSize * cellSize}" height="${gridSize * cellSize}" style="width:min(${gridSize * cellSize}px,90vw);height:auto;background:#8ed14f;border:3px solid #4c8f39;border-radius:12px;overflow:hidden;"></canvas>
+            <div class="sn-dpad" style="margin-top:.8rem;">
+                <div class="sn-dpad-row">
+                    <button id="sn-up" class="small-btn sn-dpad-btn">▲</button>
+                </div>
+                <div class="sn-dpad-row">
+                    <button id="sn-left" class="small-btn sn-dpad-btn">◀</button>
+                    <button id="sn-down" class="small-btn sn-dpad-btn">▼</button>
+                    <button id="sn-right" class="small-btn sn-dpad-btn">▶</button>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:center;gap:.6rem;flex-wrap:wrap;margin-top:.8rem;">
+                <button id="sn-back" class="small-btn">⟵ Back</button>
+            </div>
+        </div>
+    `;
+
+    const canvas = document.getElementById("sn-canvas");
+    const ctx = canvas.getContext("2d");
+    const lengthEl = document.getElementById("sn-length");
+    const timeEl = document.getElementById("sn-time");
+    const speedEl = document.getElementById("sn-speed");
+    const startBtn = document.getElementById("sn-start");
+
+    function randomFood() {
+        let x, y, onSnake;
+        do {
+            x = Math.floor(Math.random() * gridSize);
+            y = Math.floor(Math.random() * gridSize);
+            onSnake = snake.some((p) => p.x === x && p.y === y);
+        } while (onSnake);
+        food = { x, y };
+    }
+
+    function setDirection(x, y) {
+        if (gameOver || !started) return;
+        if (x === -direction.x && y === -direction.y) return;
+        nextDirection = { x, y };
+    }
+
+    function drawApple(x, y) {
+        const cx = x * cellSize + cellSize / 2;
+        const cy = y * cellSize + cellSize / 2;
+        const r = cellSize * 0.33;
+        ctx.fillStyle = "#e53935";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#2e7d32";
+        ctx.fillRect(cx - 2, cy - r - 5, 4, 6);
+    }
+
+    function drawRoundedCell(x, y, fill, radius = 6) {
+        const px = x * cellSize + 1;
+        const py = y * cellSize + 1;
+        const s = cellSize - 2;
+        const r = Math.min(radius, s / 2);
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(px + r, py);
+        ctx.lineTo(px + s - r, py);
+        ctx.quadraticCurveTo(px + s, py, px + s, py + r);
+        ctx.lineTo(px + s, py + s - r);
+        ctx.quadraticCurveTo(px + s, py + s, px + s - r, py + s);
+        ctx.lineTo(px + r, py + s);
+        ctx.quadraticCurveTo(px, py + s, px, py + s - r);
+        ctx.lineTo(px, py + r);
+        ctx.quadraticCurveTo(px, py, px + r, py);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < gridSize; y++) {
+            for (let x = 0; x < gridSize; x++) {
+                ctx.fillStyle = (x + y) % 2 === 0 ? "#9adf5e" : "#90d655";
+                ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+        }
+
+        snake.forEach((part, idx) => {
+            if (idx === 0) {
+                drawRoundedCell(part.x, part.y, "#1f57cc", 7);
+                const eyeOffsetX = direction.x !== 0 ? direction.x * 3 : 0;
+                const eyeOffsetY = direction.y !== 0 ? direction.y * 3 : 0;
+                const cx = part.x * cellSize + cellSize / 2;
+                const cy = part.y * cellSize + cellSize / 2;
+                ctx.fillStyle = "#ffffff";
+                ctx.beginPath();
+                ctx.arc(cx - 5 + eyeOffsetX, cy - 4 + eyeOffsetY, 2.2, 0, Math.PI * 2);
+                ctx.arc(cx + 5 + eyeOffsetX, cy - 4 + eyeOffsetY, 2.2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                drawRoundedCell(part.x, part.y, "#2f7af2", 6);
+            }
+        });
+
+        drawApple(food.x, food.y);
+    }
+
+    function endSnakeGame() {
+        if (gameOver) return;
+        gameOver = true;
+        started = false;
+        clearInterval(moveTimer);
+        clearInterval(clockTimer);
+        showGameResult(snake.length, "Snake time ended!", startGameCallback);
+    }
+
+    function restartMoveTimer() {
+        clearInterval(moveTimer);
+        moveTimer = setInterval(step, speedMs);
+        const speedLevel = (190 / speedMs).toFixed(1);
+        speedEl.textContent = `Speed: ${speedLevel}x`;
+    }
+
+    function step() {
+        if (gameOver || !started) return;
+        direction = nextDirection;
+        const head = {
+            x: (snake[0].x + direction.x + gridSize) % gridSize,
+            y: (snake[0].y + direction.y + gridSize) % gridSize
+        };
+
+        if (snake.some((p) => p.x === head.x && p.y === head.y)) {
+            endSnakeGame();
+            return;
+        }
+
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+            randomFood();
+            speedMs = Math.max(85, speedMs - 10);
+            restartMoveTimer();
+        } else {
+            snake.pop();
+        }
+
+        lengthEl.textContent = `Length: ${snake.length}`;
+        draw();
+    }
+
+    function onKey(e) {
+        if (gameOver || gameArea.classList.contains("hidden")) {
+            window.removeEventListener("keydown", onKey);
+            return;
+        }
+        if (e.key === "ArrowUp") setDirection(0, -1);
+        if (e.key === "ArrowDown") setDirection(0, 1);
+        if (e.key === "ArrowLeft") setDirection(-1, 0);
+        if (e.key === "ArrowRight") setDirection(1, 0);
+    }
+
+    document.getElementById("sn-up").onclick = () => setDirection(0, -1);
+    document.getElementById("sn-down").onclick = () => setDirection(0, 1);
+    document.getElementById("sn-left").onclick = () => setDirection(-1, 0);
+    document.getElementById("sn-right").onclick = () => setDirection(1, 0);
+    startBtn.onclick = () => {
+        if (started || gameOver) return;
+        started = true;
+        startBtn.disabled = true;
+        restartMoveTimer();
+        clockTimer = setInterval(() => {
+            if (gameOver) return;
+            timeLeft--;
+            timeEl.textContent = `Time: ${timeLeft}s`;
+            if (timeLeft <= 0) endSnakeGame();
+        }, 1000);
+    };
+    document.getElementById("sn-back").onclick = () => {
+        gameOver = true;
+        started = false;
+        clearInterval(moveTimer);
+        clearInterval(clockTimer);
+        window.removeEventListener("keydown", onKey);
+        hide(gameArea);
+        updateGamesList();
+        show(levelGames);
+    };
+
+    window.addEventListener("keydown", onKey);
+
+    draw();
+    speedEl.textContent = "Speed: 1.0x";
+}
+
 // ================ Override showGiftScreen for 4 levels ================
 
 function showGiftScreen() {
@@ -2111,6 +3082,8 @@ function showGiftScreen() {
         } else if(currentLevel === 2){
             if (level4Btn) level4Btn.disabled = false;
             openLevel(3);
+        } else if (currentLevel === 3) {
+            openLevel(4);
         } else {
             // All levels finished: compute full session results and send to Lazy-eye Firebase
             try {
