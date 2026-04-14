@@ -388,3 +388,188 @@ body {
   60% { opacity:1; transform: translateY(-10px);}
   100% { opacity:1; transform: translateY(0);}
 }
+
+/* Spot the Difference (Lazy Eye Training) */
+.std-wrap {
+    width: min(1100px, 96vw);
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+.std-header h1 {
+    margin: 0;
+    color: #2d2d6a;
+}
+.std-header p {
+    margin: 0.35rem 0 0.65rem 0;
+    color: #355070;
+}
+.std-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    justify-content: center;
+    font-weight: 700;
+}
+.std-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 0.9rem 0;
+}
+.std-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+.std-panel {
+    background: #f8fbff;
+    border-radius: 14px;
+    padding: 0.6rem;
+}
+.std-panel h3 {
+    margin: 0 0 0.45rem 0;
+}
+.std-scene {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 7 / 8;
+    border-radius: 12px;
+    border: 3px solid #dce6f8;
+    overflow: hidden;
+}
+.std-photo {
+    display: grid;
+    grid-template-columns: repeat(14, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    background-image: var(--std-bg-url);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+}
+.std-left {
+    background-position: left center;
+}
+.std-right {
+    background-position: right center;
+}
+.std-cell {
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 700;
+    color: transparent;
+    font-size: 0.72rem;
+    text-shadow: none;
+    padding: 0;
+}
+.std-cell-wrong {
+    background: rgba(211, 47, 47, 0.2);
+}
+.std-cell-found {
+    background: transparent;
+    border-color: transparent;
+}
+.std-cell-hint {
+    background: rgba(255, 193, 7, 0.45);
+}
+.std-correct-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(21, 128, 61, 0.95);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+.std-object {
+    position: absolute;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    transition: transform 0.15s ease;
+}
+.std-object:hover {
+    transform: scale(1.07);
+}
+.std-found {
+    outline: 3px solid #00a153;
+}
+.std-marker {
+    position: absolute;
+    right: -8px;
+    top: -12px;
+    background: #00a153;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0.3rem 0.36rem;
+}
+.std-hint {
+    box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.95);
+}
+.std-focus-zone {
+    position: absolute;
+    border: 3px dashed #fdd835;
+    border-radius: 10px;
+    animation: stdBlink 0.24s infinite alternate;
+    pointer-events: none;
+}
+.std-feedback {
+    text-align: center;
+    margin: 0.75rem 0 0.2rem 0;
+    font-weight: 700;
+}
+.std-blur {
+    filter: blur(1px);
+}
+@keyframes stdBlink {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
+}
+@media (max-width: 760px) {
+    .std-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    .std-wrap { background: #f2b4d3; color: #e9f2ff; }
+    .std-header h1, .std-header p, .std-panel h3, .std-feedback { color: #e9f2ff; }
+    .std-panel { background: #f875b9; }
+    .std-scene { border-color: #f2b4d3; }
+}
+
+/* Snake D-pad controls */
+.sn-dpad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+}
+.sn-dpad-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.45rem;
+}
+.sn-dpad-btn {
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border-radius: 14px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    background: #2f2f36;
+    color: #fff;
+    margin-top: 0 !important;
+}
+@media (max-width: 700px) {
+    .sn-dpad-btn {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+    }
+}
