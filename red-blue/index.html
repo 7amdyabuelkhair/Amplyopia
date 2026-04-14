@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Red/Blue Glasses Exercises</title>
+    <style>
+        :root {
+            --bg: #fff8fb;
+            --panel: #ffffff;
+            --pink: #f39ccd;
+            --pink-dark: #b84d90;
+            --text: #3a2a35;
+            --muted: #6d5a66;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Inter, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .wrap {
+            max-width: 980px;
+            margin: 24px auto;
+            padding: 0 14px;
+        }
+        .head {
+            background: var(--panel);
+            border: 2px solid #f6c6e1;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 18px rgba(204, 129, 173, 0.18);
+            margin-bottom: 14px;
+        }
+        h1 { margin: 0 0 10px 0; color: var(--pink-dark); }
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tab-btn {
+            border: none;
+            background: #f6d5e8;
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .tab-btn.active { background: var(--pink-dark); color: #fff; }
+        .panel {
+            background: var(--panel);
+            border: 2px solid #f6c6e1;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 18px rgba(204, 129, 173, 0.15);
+        }
+        .hidden { display: none; }
+        .img-frame {
+            width: 100%;
+            min-height: 280px;
+            border: 2px dashed #e9a8cf;
+            border-radius: 12px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .img-frame img { max-width: 100%; max-height: 62vh; object-fit: contain; }
+        .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; }
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-main { background: var(--pink-dark); color: #fff; }
+        .btn-soft { background: #f4d7e9; color: var(--text); }
+        .status { text-align: center; color: var(--muted); min-height: 22px; }
+        .hint { color: var(--muted); font-size: 14px; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="head">
+            <h1>Red/Blue Glasses</h1>
+            <div class="tabs">
+                <button class="tab-btn active" id="tab-ex1">Ex1 - Front&Back</button>
+                <button class="tab-btn" id="tab-ex2">Ex2 - Motor Fusion</button>
+                <button class="tab-btn" id="back-main">Back</button>
+            </div>
+        </div>
+
+        <section id="ex1-panel" class="panel">
+            <p class="hint">Put your images in <code>red-blue/ex-1/</code> and add filenames in the list in this page script.</p>
+            <div class="img-frame"><img id="ex1-image" alt="Front/Back exercise"></div>
+            <div class="controls">
+                <button class="btn btn-soft" id="ex1-prev">Prev</button>
+                <button class="btn btn-main" id="answer-front">Front</button>
+                <button class="btn btn-main" id="answer-back">Back</button>
+                <button class="btn btn-soft" id="ex1-next">Next</button>
+            </div>
+            <div class="status" id="ex1-status"></div>
+        </section>
+
+        <section id="ex2-panel" class="panel hidden">
+            <p class="hint">Focus on fusing the image into one and hold it as long as you can.</p>
+            <div class="img-frame"><img id="ex2-image" alt="Motor Fusion exercise"></div>
+            <div class="controls">
+                <button class="btn btn-soft" id="ex2-prev">Prev</button>
+                <button class="btn btn-soft" id="ex2-next">Next</button>
+            </div>
+            <div class="status" id="ex2-status"></div>
+        </section>
+    </div>
+
+    <script>
+        // Optional manual fallback list for Ex1 images.
+        // If auto-discovery works, this list is ignored.
+        const EX1_FALLBACK = [
+            "front1.png",
+            "front2.png",
+            "behind3.png",
+            "behind4.png",
+            "behind5.png",
+            "front6.png",
+            "behind7.png",
+            "front8.png",
+            "front9.png",
+            "front10.png"
+        ];
+
+        // Add your Ex2 GIF/image filenames here (manual list)
+        const EX2_IMAGES = [
+            // "fusion-1.gif",
+            // "fusion-2.gif"
+        ];
+
+        let EX1_IMAGES = [];
+        let ex1Index = 0;
+        let ex2Index = 0;
+
+        const ex1Image = document.getElementById('ex1-image');
+        const ex2Image = document.getElementById('ex2-image');
+        const ex1Status = document.getElementById('ex1-status');
+        const ex2Status = document.getElementById('ex2-status');
+
+        function ex1Src(name) { return `ex-1/${name}`; }
+        function ex2Src(name) { return `ex-2/${name}`; }
+
+        function showEx1() {
+            if (!EX1_IMAGES.length) {
+                ex1Image.removeAttribute('src');
+                ex1Status.textContent = 'No Ex1 images yet. Add filenames in script.';
+                return;
+            }
+            ex1Image.src = ex1Src(EX1_IMAGES[ex1Index]);
+            ex1Status.textContent = `Image ${ex1Index + 1} / ${EX1_IMAGES.length}`;
+        }
+
+        function showEx2() {
+            if (!EX2_IMAGES.length) {
+                ex2Image.removeAttribute('src');
+                ex2Status.textContent = 'No Ex2 GIFs yet. Add filenames in script.';
+                return;
+            }
+            ex2Image.src = ex2Src(EX2_IMAGES[ex2Index]);
+            ex2Status.textContent = `GIF ${ex2Index + 1} / ${EX2_IMAGES.length}`;
+        }
+
+        function expectedAnswer(filename) {
+            const f = filename.toLowerCase();
+            if (f.includes('front')) return 'front';
+            if (f.includes('back') || f.includes('behind')) return 'back';
+            return '';
+        }
+
+        async function discoverFolderImages(folderPath) {
+            try {
+                // Works when running from a local web server that exposes directory listing.
+                const res = await fetch(`${folderPath}/`);
+                if (!res.ok) return [];
+                const html = await res.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a[href]'))
+                    .map((a) => a.getAttribute('href'))
+                    .filter(Boolean)
+                    .map((href) => href.split('?')[0])
+                    .map((href) => href.split('#')[0])
+                    .map((href) => href.endsWith('/') ? href.slice(0, -1) : href)
+                    .map((href) => href.includes('/') ? href.substring(href.lastIndexOf('/') + 1) : href)
+                    .filter((name) => /\.(png|jpg|jpeg|gif|webp)$/i.test(name));
+                return [...new Set(links)].sort((a, b) => a.localeCompare(b));
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function answerEx1(choice) {
+            if (!EX1_IMAGES.length) return;
+            const expect = expectedAnswer(EX1_IMAGES[ex1Index]);
+            if (!expect) {
+                ex1Status.textContent = 'Filename must include front/back (or behind).';
+                return;
+            }
+            if (choice === expect) {
+                ex1Status.textContent = 'Correct! Moving to next image...';
+                setTimeout(() => {
+                    if (!EX1_IMAGES.length) return;
+                    ex1Index = (ex1Index + 1) % EX1_IMAGES.length;
+                    showEx1();
+                }, 400);
+            } else {
+                ex1Status.textContent = `Wrong, answer is ${expect}.`;
+            }
+        }
+
+        document.getElementById('ex1-prev').onclick = () => {
+            if (!EX1_IMAGES.length) return;
+            ex1Index = (ex1Index - 1 + EX1_IMAGES.length) % EX1_IMAGES.length;
+            showEx1();
+        };
+        document.getElementById('ex1-next').onclick = () => {
+            if (!EX1_IMAGES.length) return;
+            ex1Index = (ex1Index + 1) % EX1_IMAGES.length;
+            showEx1();
+        };
+        document.getElementById('answer-front').onclick = () => answerEx1('front');
+        document.getElementById('answer-back').onclick = () => answerEx1('back');
+
+        document.getElementById('ex2-prev').onclick = () => {
+            if (!EX2_IMAGES.length) return;
+            ex2Index = (ex2Index - 1 + EX2_IMAGES.length) % EX2_IMAGES.length;
+            showEx2();
+        };
+        document.getElementById('ex2-next').onclick = () => {
+            if (!EX2_IMAGES.length) return;
+            ex2Index = (ex2Index + 1) % EX2_IMAGES.length;
+            showEx2();
+        };
+
+        const tabEx1 = document.getElementById('tab-ex1');
+        const tabEx2 = document.getElementById('tab-ex2');
+        const ex1Panel = document.getElementById('ex1-panel');
+        const ex2Panel = document.getElementById('ex2-panel');
+        tabEx1.onclick = () => {
+            tabEx1.classList.add('active');
+            tabEx2.classList.remove('active');
+            ex1Panel.classList.remove('hidden');
+            ex2Panel.classList.add('hidden');
+        };
+        tabEx2.onclick = () => {
+            tabEx2.classList.add('active');
+            tabEx1.classList.remove('active');
+            ex2Panel.classList.remove('hidden');
+            ex1Panel.classList.add('hidden');
+            showEx2();
+        };
+        document.getElementById('back-main').onclick = () => { window.location.href = '../index.html'; };
+
+        (async () => {
+            const autoEx1 = await discoverFolderImages('ex-1');
+            EX1_IMAGES = autoEx1.length ? autoEx1 : EX1_FALLBACK.slice();
+            showEx1();
+        })();
+        showEx2();
+    </script>
+</body>
+</html>
