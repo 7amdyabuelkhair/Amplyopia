@@ -32,12 +32,16 @@
                     <div class="step-header">
                         <img src="images/user-icon.png" alt="Dashboard" class="step-icon" onerror="this.style.display='none';">
                         <h1 class="step-title">Child Dashboard</h1>
-                        <p class="step-subtitle">Profile and total points</p>
+                        <p class="step-subtitle">Profile, progress, and analytics</p>
                     </div>
 
-                    <div class="auth-card">
+                    <div class="auth-card" style="margin-bottom:16px;">
                         <div class="auth-body">
                             <div class="auth-error" id="dash-error" aria-live="polite"></div>
+
+                            <div style="display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:6px;">
+                                <img id="dash-avatar" src="images/user-icon.png" alt="Child avatar" style="width:74px;height:74px;border-radius:22px;object-fit:cover;border:2px solid var(--border-color);box-shadow:0 10px 26px var(--shadow-soft);" onerror="this.style.display='none';">
+                            </div>
 
                             <div style="display:grid;gap:10px;">
                                 <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -70,7 +74,103 @@
 
                             <div class="form-actions" style="margin-top:0;">
                                 <button type="button" class="btn btn-secondary" id="dash-signout">Sign out</button>
-                                <a class="btn btn-primary" href="index.html">Edit profile</a>
+                                <a class="btn btn-primary" href="index.html?editProfile=1">Edit profile</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-card" style="margin-bottom:16px;">
+                        <div class="auth-body">
+                            <div class="auth-success" style="font-size:16px;">Lazy Eye Training</div>
+                            <div style="display:grid;gap:14px;">
+                                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
+                                    <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="color:var(--text-muted);font-weight:700;font-size:13px;">Total points</div>
+                                        <div id="lazy-total" style="font-size:28px;font-weight:900;margin-top:6px;">-</div>
+                                    </div>
+                                    <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="color:var(--text-muted);font-weight:700;font-size:13px;">Played games</div>
+                                        <div id="lazy-games" style="font-size:28px;font-weight:900;margin-top:6px;">-</div>
+                                    </div>
+                                    <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="color:var(--text-muted);font-weight:700;font-size:13px;">Days active</div>
+                                        <div id="lazy-days" style="font-size:28px;font-weight:900;margin-top:6px;">-</div>
+                                    </div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+                                    <div style="padding:12px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="font-weight:800;margin-bottom:8px;">Points by Level</div>
+                                        <canvas id="chart-levels" height="160"></canvas>
+                                    </div>
+                                    <div style="padding:12px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="font-weight:800;margin-bottom:8px;">Points per Day</div>
+                                        <canvas id="chart-days" height="160"></canvas>
+                                    </div>
+                                </div>
+
+                                <div style="padding:12px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);overflow:auto;">
+                                    <div style="font-weight:800;margin-bottom:8px;">Games detail</div>
+                                    <table style="width:100%;border-collapse:collapse;min-width:680px;">
+                                        <thead>
+                                            <tr style="text-align:left;background:linear-gradient(135deg,var(--primary-pink),var(--accent-pink));">
+                                                <th style="padding:12px 14px;">Date</th>
+                                                <th style="padding:12px 14px;">Level</th>
+                                                <th style="padding:12px 14px;">Game</th>
+                                                <th style="padding:12px 14px;">Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lazy-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-card">
+                        <div class="auth-body">
+                            <div class="auth-success" style="font-size:16px;">Vision Test</div>
+                            <div style="display:grid;gap:14px;">
+                                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
+                                    <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="color:var(--text-muted);font-weight:700;font-size:13px;">Tests completed</div>
+                                        <div id="vt-count" style="font-size:28px;font-weight:900;margin-top:6px;">-</div>
+                                    </div>
+                                    <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="color:var(--text-muted);font-weight:700;font-size:13px;">Points earned</div>
+                                        <div id="vt-points" style="font-size:28px;font-weight:900;margin-top:6px;">-</div>
+                                    </div>
+                                    <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="color:var(--text-muted);font-weight:700;font-size:13px;">Last test</div>
+                                        <div id="vt-last" style="font-size:16px;font-weight:900;margin-top:10px;">-</div>
+                                    </div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+                                    <div style="padding:12px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="font-weight:800;margin-bottom:8px;">Acuity trend (from saved results)</div>
+                                        <canvas id="chart-acuity" height="160"></canvas>
+                                    </div>
+                                    <div style="padding:12px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
+                                        <div style="font-weight:800;margin-bottom:8px;">Vision tests per Day</div>
+                                        <canvas id="chart-vt-days" height="160"></canvas>
+                                    </div>
+                                </div>
+
+                                <div style="padding:12px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);overflow:auto;">
+                                    <div style="font-weight:800;margin-bottom:8px;">Vision test history</div>
+                                    <table style="width:100%;border-collapse:collapse;min-width:680px;">
+                                        <thead>
+                                            <tr style="text-align:left;background:linear-gradient(135deg,var(--primary-pink),var(--accent-pink));">
+                                                <th style="padding:12px 14px;">Date</th>
+                                                <th style="padding:12px 14px;">Right</th>
+                                                <th style="padding:12px 14px;">Left</th>
+                                                <th style="padding:12px 14px;">Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vt-table"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -93,6 +193,7 @@
     <script src="js/supabase.js"></script>
     <script src="js/profile.js"></script>
     <script src="js/score.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script>
         (function () {
             const yearEl = document.getElementById('year');
@@ -104,6 +205,81 @@
             const birthEl = document.getElementById('dash-birthdate');
             const ageEl = document.getElementById('dash-age');
             const scoreEl = document.getElementById('dash-score');
+
+            function toDayKey(iso) {
+                try { return new Date(iso).toISOString().slice(0, 10); } catch (_) { return String(iso || '').slice(0, 10) || 'unknown'; }
+            }
+            function safeNum(n) { const x = Number(n); return Number.isFinite(x) ? x : 0; }
+
+            function readVisionHistoryLocal() {
+                try {
+                    const arr = JSON.parse(localStorage.getItem('visionHistory') || '[]');
+                    return Array.isArray(arr) ? arr : [];
+                } catch (_) {
+                    return [];
+                }
+            }
+
+            function readLocalScoreEvents() {
+                try {
+                    const arr = JSON.parse(localStorage.getItem('amplyopiaScoreEvents') || '[]');
+                    return Array.isArray(arr) ? arr : [];
+                } catch (_) {
+                    return [];
+                }
+            }
+
+            function destroyChartIfExists(canvasId) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const existing = Chart.getChart(canvas);
+                if (existing) existing.destroy();
+            }
+
+            function renderBar(canvasId, labels, values) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                destroyChartIfExists(canvasId);
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Points',
+                            data: values,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
+
+            function renderLine(canvasId, labels, values, label) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                destroyChartIfExists(canvasId);
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: label || 'Value',
+                            data: values,
+                            tension: 0.25,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
 
             async function load() {
                 try {
@@ -123,6 +299,10 @@
                     const age = window.Profile?.computeAgeFromBirthdate?.(birthdate);
 
                     if (gender && window.Profile?.applyThemeFromGender) window.Profile.applyThemeFromGender(gender);
+                    const avatar = document.getElementById('dash-avatar');
+                    if (avatar) {
+                        avatar.src = gender === 'boy' ? 'images/boy.png' : gender === 'girl' ? 'images/girl.png' : 'images/user-icon.png';
+                    }
 
                     if (nameEl) nameEl.textContent = name;
                     if (genderEl) genderEl.textContent = gender === 'boy' ? 'Boy' : gender === 'girl' ? 'Girl' : gender;
@@ -133,6 +313,149 @@
                     try { total = await window.SupabaseApp?.getTotalScore?.(); } catch (_) {}
                     if (total === null || typeof total === 'undefined') total = window.Score?.getLocalTotal?.() ?? 0;
                     if (scoreEl) scoreEl.textContent = String(total);
+
+                    // --- Scores analytics (Supabase preferred, local fallback) ---
+                    let rows = [];
+                    try { rows = await window.SupabaseApp?.listScores?.(); } catch (_) {}
+                    if (!rows || !rows.length) {
+                        const local = readLocalScoreEvents();
+                        rows = local.map((e) => ({ game_id: e.game_id, points: e.points, meta: e.meta, created_at: e.when }));
+                    }
+
+                    const lazyRows = rows.filter(r => String(r.game_id || '').startsWith('lazytest:'));
+                    const vtPointRows = rows.filter(r => String(r.game_id || '').startsWith('vision-test:'));
+
+                    // Lazy summary cards
+                    const lazyTotal = lazyRows.reduce((s, r) => s + safeNum(r.points), 0);
+                    const lazyGamesSet = new Set(lazyRows.map(r => `${r.meta?.level || ''}:${r.meta?.gameName || r.game_id}`));
+                    const lazyDaysSet = new Set(lazyRows.map(r => toDayKey(r.created_at)));
+                    const lazyTotalEl = document.getElementById('lazy-total');
+                    const lazyGamesEl = document.getElementById('lazy-games');
+                    const lazyDaysEl = document.getElementById('lazy-days');
+                    if (lazyTotalEl) lazyTotalEl.textContent = String(lazyTotal);
+                    if (lazyGamesEl) lazyGamesEl.textContent = String(lazyGamesSet.size);
+                    if (lazyDaysEl) lazyDaysEl.textContent = String(lazyDaysSet.size);
+
+                    // Lazy points by level
+                    const levelMap = new Map();
+                    for (const r of lazyRows) {
+                        const lvl = r.meta?.level ? `Level ${r.meta.level}` : (r.meta?.levelName || 'Unknown');
+                        levelMap.set(lvl, (levelMap.get(lvl) || 0) + safeNum(r.points));
+                    }
+                    const levelLabels = Array.from(levelMap.keys());
+                    const levelValues = levelLabels.map(k => levelMap.get(k) || 0);
+                    renderBar('chart-levels', levelLabels, levelValues);
+
+                    // Lazy points per day
+                    const dayMap = new Map();
+                    for (const r of lazyRows) {
+                        const d = toDayKey(r.created_at);
+                        dayMap.set(d, (dayMap.get(d) || 0) + safeNum(r.points));
+                    }
+                    const dayLabels = Array.from(dayMap.keys());
+                    const dayValues = dayLabels.map(k => dayMap.get(k) || 0);
+                    renderLine('chart-days', dayLabels, dayValues, 'Points');
+
+                    // Lazy table
+                    const lazyTbody = document.getElementById('lazy-table');
+                    if (lazyTbody) {
+                        lazyTbody.innerHTML = lazyRows
+                            .slice()
+                            .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+                            .slice(0, 200)
+                            .map((r) => {
+                                const d = toDayKey(r.created_at);
+                                const lvl = r.meta?.level ? `Level ${r.meta.level}` : (r.meta?.levelName || '-');
+                                const game = r.meta?.gameName || r.meta?.game_id || r.game_id || '-';
+                                const pts = safeNum(r.points);
+                                return `<tr>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);">${d}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);">${lvl}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);">${String(game)}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);font-weight:800;">${pts}</td>
+                                </tr>`;
+                            })
+                            .join('');
+                    }
+
+                    // Vision test analytics (points from scores + detailed results from local history)
+                    const vtCountEl = document.getElementById('vt-count');
+                    const vtPointsEl = document.getElementById('vt-points');
+                    const vtLastEl = document.getElementById('vt-last');
+
+                    const vtCount = vtPointRows.length;
+                    const vtPoints = vtPointRows.reduce((s, r) => s + safeNum(r.points), 0);
+                    const vtLast = vtPointRows.length ? toDayKey(vtPointRows[vtPointRows.length - 1].created_at) : '-';
+                    if (vtCountEl) vtCountEl.textContent = String(vtCount);
+                    if (vtPointsEl) vtPointsEl.textContent = String(vtPoints);
+                    if (vtLastEl) vtLastEl.textContent = vtLast;
+
+                    // Vision tests per day
+                    const vtDayMap = new Map();
+                    for (const r of vtPointRows) {
+                        const d = toDayKey(r.created_at);
+                        vtDayMap.set(d, (vtDayMap.get(d) || 0) + 1);
+                    }
+                    const vtDayLabels = Array.from(vtDayMap.keys());
+                    const vtDayValues = vtDayLabels.map(k => vtDayMap.get(k) || 0);
+                    renderLine('chart-vt-days', vtDayLabels, vtDayValues, 'Tests');
+
+                    // Acuity trend from local history (visionHistory)
+                    const hist = readVisionHistoryLocal()
+                        .filter(x => x && x.when)
+                        .slice()
+                        .sort((a, b) => String(a.when).localeCompare(String(b.when)));
+
+                    const acuityLabels = hist.map(h => toDayKey(h.when));
+                    const acuityRight = hist.map(h => safeNum(h.rightLogmar ?? h.rightEye ?? 0));
+                    const acuityLeft = hist.map(h => safeNum(h.leftLogmar ?? h.leftEye ?? 0));
+                    const canvasAcuity = document.getElementById('chart-acuity');
+                    if (canvasAcuity) {
+                        destroyChartIfExists('chart-acuity');
+                        new Chart(canvasAcuity, {
+                            type: 'line',
+                            data: {
+                                labels: acuityLabels,
+                                datasets: [
+                                    { label: 'Right', data: acuityRight, tension: 0.25 },
+                                    { label: 'Left', data: acuityLeft, tension: 0.25 }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: { legend: { position: 'bottom' } },
+                                scales: { y: { beginAtZero: true } }
+                            }
+                        });
+                    }
+
+                    // Vision table (combine local hist with points by date)
+                    const pointsByDay = new Map();
+                    for (const r of vtPointRows) {
+                        const d = toDayKey(r.created_at);
+                        pointsByDay.set(d, (pointsByDay.get(d) || 0) + safeNum(r.points));
+                    }
+                    const vtTbody = document.getElementById('vt-table');
+                    if (vtTbody) {
+                        const rowsHtml = hist
+                            .slice()
+                            .sort((a, b) => String(b.when).localeCompare(String(a.when)))
+                            .slice(0, 100)
+                            .map((h) => {
+                                const d = toDayKey(h.when);
+                                const right = h.rightEye ?? h.rightLogmar ?? '-';
+                                const left = h.leftEye ?? h.leftLogmar ?? '-';
+                                const pts = pointsByDay.get(d) || 0;
+                                return `<tr>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);">${d}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);">${right}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);">${left}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid var(--border-color);font-weight:800;">${pts}</td>
+                                </tr>`;
+                            })
+                            .join('');
+                        vtTbody.innerHTML = rowsHtml || `<tr><td colspan="4" style="padding:12px 14px;color:var(--text-muted);">No saved vision tests yet.</td></tr>`;
+                    }
                 } catch (e) {
                     if (errEl) errEl.textContent = e?.message || 'Failed to load dashboard.';
                 }

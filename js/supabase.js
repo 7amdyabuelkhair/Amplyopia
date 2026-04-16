@@ -144,6 +144,20 @@
     return (data || []).reduce((sum, row) => sum + (Number(row.points) || 0), 0);
   }
 
+  async function listScores() {
+    if (!client) return [];
+    const session = await getSession();
+    const userId = session?.user?.id;
+    if (!userId) return [];
+    const { data, error } = await client
+      .from('scores')
+      .select('game_id,points,meta,created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
   window.SupabaseApp = {
     client,
     configured: !!client,
@@ -157,7 +171,8 @@
     getProfile,
     upsertProfile,
     addScoreEvent,
-    getTotalScore
+    getTotalScore,
+    listScores
   };
 })();
 

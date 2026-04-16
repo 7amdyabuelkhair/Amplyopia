@@ -46,7 +46,7 @@
     <!-- Navigation Bar -->
     <header class="site-header">
         <div class="container header-inner">
-            <a class="logo" href="#">
+            <a class="logo" href="index.html">
                 <img src="images/logo.png" alt="Amplyopia Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <span class="logo-text">amplyopia</span>
             </a>
@@ -56,11 +56,18 @@
             </button>
             <nav id="site-nav" class="site-nav" aria-label="Primary">
                 <ul>
+                    <li><a href="dashboard.html" id="nav-dashboard-link" class="hidden">Dashboard</a></li>
                     <li><a href="#features">Features</a></li>
                     <li><a href="#about">About</a></li>
                     <li><a href="#contact">Contact</a></li>
+                    <li><button type="button" class="nav-signout hidden" id="nav-signout-btn">Sign out</button></li>
                 </ul>
             </nav>
+
+            <a href="dashboard.html" class="user-chip hidden" id="user-chip" aria-label="Open dashboard">
+                <img id="user-chip-avatar" class="user-chip-avatar" src="images/user-icon.png" alt="" onerror="this.style.display='none';">
+                <span id="user-chip-name" class="user-chip-name">Dashboard</span>
+            </a>
         </div>
     </header>
 
@@ -97,7 +104,7 @@
                     <div class="instructions-container">
                         <div class="instruction-card">
                             <div class="instruction-image-wrapper">
-                                <img src="images/instruction-1.png" alt="Prepare" class="instruction-image" onerror="this.style.display='none';">
+                                <img id="instruction-img-1" src="images/instruction-1.png" alt="Prepare" class="instruction-image" onerror="this.style.display='none';">
                             </div>
                             <h3>Prepare Your Environment</h3>
                             <p>Make sure you're in a well-lit room and sitting at a comfortable distance from your screen.</p>
@@ -105,7 +112,7 @@
                         
                         <div class="instruction-card">
                             <div class="instruction-image-wrapper">
-                                <img src="images/instruction-2.png" alt="Distance" class="instruction-image" onerror="this.style.display='none';">
+                                <img id="instruction-img-2" src="images/instruction-2.png" alt="Distance" class="instruction-image" onerror="this.style.display='none';">
                             </div>
                             <h3>Maintain Proper Distance</h3>
                             <p>Keep your device at arm's length (approximately 20-24 inches) for accurate results.</p>
@@ -113,7 +120,7 @@
                         
                         <div class="instruction-card">
                             <div class="instruction-image-wrapper">
-                                <img src="images/instruction-3.png" alt="Focus" class="instruction-image" onerror="this.style.display='none';">
+                                <img id="instruction-img-3" src="images/instruction-3.png" alt="Focus" class="instruction-image" onerror="this.style.display='none';">
                             </div>
                             <h3>Stay Focused</h3>
                             <p>Follow the on-screen instructions carefully and take your time with each test.</p>
@@ -184,28 +191,35 @@
                             <div class="auth-error" id="profile-error" aria-live="polite"></div>
 
                             <form class="user-form" id="profile-form">
-                                <div class="form-group">
-                                    <label for="profile-name">Your Name</label>
-                                    <input type="text" id="profile-name" name="name" placeholder="Enter your full name" autocomplete="name" required>
-                                    <div class="form-icon-wrapper">
-                                        <img src="images/name-icon.png" alt="Name" class="form-icon" onerror="this.style.display='none';">
+                                <div class="profile-grid">
+                                    <div class="form-group">
+                                        <label for="profile-name">Child Name</label>
+                                        <input type="text" id="profile-name" name="name" placeholder="Enter child name" autocomplete="name" required>
                                     </div>
-                                </div>
 
-                                <div class="form-group">
-                                    <label for="profile-gender">Child Gender</label>
-                                    <select id="profile-gender" name="gender" required>
-                                        <option value="" selected disabled>Choose</option>
-                                        <option value="boy">Boy</option>
-                                        <option value="girl">Girl</option>
-                                    </select>
-                                </div>
+                                    <div class="form-group">
+                                        <label>Child Gender</label>
+                                        <div class="gender-cards" role="radiogroup" aria-label="Child gender">
+                                            <label class="gender-card">
+                                                <input type="radio" name="gender" value="boy" required>
+                                                <span class="gender-card-inner">
+                                                    <img src="images/boy.png" alt="Boy" class="gender-avatar" onerror="this.style.display='none';">
+                                                    <span class="gender-title">Boy</span>
+                                                </span>
+                                            </label>
+                                            <label class="gender-card">
+                                                <input type="radio" name="gender" value="girl" required>
+                                                <span class="gender-card-inner">
+                                                    <img src="images/girl.png" alt="Girl" class="gender-avatar" onerror="this.style.display='none';">
+                                                    <span class="gender-title">Girl</span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
 
-                                <div class="form-group">
-                                    <label for="profile-birthdate">Child Birthday</label>
-                                    <input type="date" id="profile-birthdate" name="birthdate" required>
-                                    <div class="form-icon-wrapper">
-                                        <img src="images/age-icon.png" alt="Age" class="form-icon" onerror="this.style.display='none';">
+                                    <div class="form-group">
+                                        <label for="profile-birthdate">Child Birthday</label>
+                                        <input type="date" id="profile-birthdate" name="birthdate" required>
                                     </div>
                                 </div>
 
@@ -232,6 +246,14 @@
                     </div>
                     
                     <div class="options-grid">
+                        <button class="option-card" id="opt-dashboard">
+                            <div class="option-image-wrapper">
+                                <img src="images/dashboard.png" alt="Dashboard" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Dashboard</h3>
+                            <p class="option-description">Child profile, age, and total score</p>
+                        </button>
+
                         <button class="option-card" id="opt-vision-test">
                             <div class="option-image-wrapper">
                                 <img src="images/vision-test.png" alt="Vision Test" class="option-image" onerror="this.style.display='none';">
@@ -263,22 +285,6 @@
                             <h3 class="option-title">Report</h3>
                             <p class="option-description">View your test results and history</p>
                         </button>
-
-                        <button class="option-card" id="opt-dashboard">
-                            <div class="option-image-wrapper">
-                                <img src="images/user-icon.png" alt="Dashboard" class="option-image" onerror="this.style.display='none';">
-                            </div>
-                            <h3 class="option-title">Dashboard</h3>
-                            <p class="option-description">Child profile, age, and total score</p>
-                        </button>
-
-                        <button class="option-card" id="opt-red-blue">
-                            <div class="option-image-wrapper">
-                                <img src="images/lazy-eye.png" alt="Red Blue Glasses" class="option-image" onerror="this.style.display='none';">
-                            </div>
-                            <h3 class="option-title">Red/Blue Glasses</h3>
-                            <p class="option-description">Front-Back and Motor Fusion exercises</p>
-                        </button>
                     </div>
                     
                     <button type="button" class="btn btn-secondary btn-prev" onclick="prevStep()">
@@ -309,6 +315,7 @@
                 <div class="footer-section">
                     <h4>Services</h4>
                     <ul>
+                        <li><a href="dashboard.html">Dashboard</a></li>
                         <li><a href="vision-test.html">Vision Test</a></li>
                         <li><a href="lazytest/index.html">Lazy Eye</a></li>
                         <li><a href="guidelines.html">Guidelines</a></li>

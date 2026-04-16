@@ -98,7 +98,6 @@ try {
     const q = new URLSearchParams(window.location.search);
     const lvlNum = Number(q.get('level'));
     if (lvlNum >= 1 && lvlNum <= levels.length) {
-        if (lvlNum === 6 && level6Btn) level6Btn.disabled = false;
         setTimeout(() => openLevel(lvlNum - 1), 0);
     }
 } catch (_) {}
@@ -194,7 +193,6 @@ function showGiftScreen() {
         } else if (currentLevel === 3) {
             openLevel(4);
         } else if (currentLevel === 4) {
-            if (level6Btn) level6Btn.disabled = false;
             openLevel(5);
         } else {
             show(finalScreen);
@@ -215,7 +213,6 @@ playAgainBtn.onclick = () => {
     level2Btn.disabled = false;
     level3Btn.disabled = true;
     if (level4Btn) level4Btn.disabled = true;
-    if (level6Btn) level6Btn.disabled = true;
     hide(finalScreen, gameArea, gameResult, giftScreen, levelGames);
     show(mainMenu);
 }

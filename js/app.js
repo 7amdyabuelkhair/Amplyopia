@@ -6,6 +6,44 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStep = 1;
     const totalSteps = 3;
     let profileComplete = false;
+    const progressIndicator = document.querySelector('.progress-indicator');
+
+    function applyThemeFromStoredGender() {
+        const gender = localStorage.getItem('userGender');
+        if (gender === 'boy' || gender === 'girl') {
+            document.body.classList.remove('theme-guest');
+            window.Profile?.applyThemeFromGender?.(gender);
+        } else {
+            document.body.classList.remove('theme-boy', 'theme-girl');
+            document.body.classList.add('theme-guest');
+        }
+    }
+
+    function setInstructionImagesByGender() {
+        const gender = localStorage.getItem('userGender');
+        const img1 = document.getElementById('instruction-img-1');
+        const img2 = document.getElementById('instruction-img-2');
+        const img3 = document.getElementById('instruction-img-3');
+        if (!img1 || !img2 || !img3) return;
+
+        if (gender === 'girl') {
+            img1.src = 'images/girl-instruction-1.png';
+            img2.src = 'images/girl-instruction-2.png';
+            img3.src = 'images/girl-instruction-3.png';
+        } else if (gender === 'boy') {
+            img1.src = 'images/boy-instruction-1.jpg';
+            img2.src = 'images/boy-instruction-2.jpg';
+            img3.src = 'images/boy-instruction-3.jpg';
+        } else {
+            // Guest (yellow) instruction images order (requested)
+            img1.src = 'images/boy-instruction-1.jpg';
+            img2.src = 'images/girl-instruction-3.png';
+            img3.src = 'images/boy-instruction-2.jpg';
+        }
+    }
+
+    applyThemeFromStoredGender();
+    setInstructionImagesByGender();
 
     // Update progress indicator
     function updateProgress(step) {
@@ -43,6 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.prevStep = function() {
+        if (currentStep === 3) {
+            currentStep = 1;
+            showStep(1);
+            return;
+        }
         if (currentStep > 1) {
             currentStep--;
             showStep(currentStep);
@@ -104,10 +147,20 @@ document.addEventListener('DOMContentLoaded', () => {
         profileCard?.classList.remove('hidden');
     }
 
+    function isEditProfileMode() {
+        try {
+            const q = new URLSearchParams(window.location.search);
+            return q.get('editProfile') === '1';
+        } catch (_) {
+            return false;
+        }
+    }
+
     async function hydrateProfileFromSupabase(session) {
         try {
             if (!session?.user?.id) {
                 showAuthUI();
+                applyThemeFromStoredGender();
                 return;
             }
 
@@ -129,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hasGender) {
                 window.Profile?.applyThemeFromGender?.(profile.gender);
                 localStorage.setItem('userGender', String(profile.gender));
+                document.body.classList.remove('theme-guest');
             }
 
             if (hasName && hasGender && hasBirthdate && hasAge) {
@@ -136,8 +190,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('userBirthdate', String(profile.birthdate));
                 localStorage.setItem('userAge', String(computedAge));
                 profileComplete = true;
-                // Auto-advance to step 3 if user lands here after OAuth redirect.
-                if (currentStep === 2) window.nextStep();
+                setInstructionImagesByGender();
+                // Never show sign-in/profile steps after sign-in unless user explicitly edits profile
+                if (isEditProfileMode()) {
+                    if (progressIndicator) progressIndicator.classList.remove('hidden');
+                    currentStep = 2;
+                    showStep(2);
+                    showProfileUI();
+                } else {
+                    if (progressIndicator) progressIndicator.classList.add('hidden');
+                    currentStep = 3;
+                    showStep(3);
+                }
             } else {
                 profileComplete = false;
             }
@@ -156,6 +220,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const session = await window.SupabaseApp?.getSession?.();
         await hydrateProfileFromSupabase(session);
         window.SupabaseApp?.onAuthStateChange?.((s) => hydrateProfileFromSupabase(s));
+    })();
+
+    // Navbar user chip + sign-out
+    const userChip = document.getElementById('user-chip');
+    const userChipName = document.getElementById('user-chip-name');
+    const userChipAvatar = document.getElementById('user-chip-avatar');
+    const navSignoutBtn = document.getElementById('nav-signout-btn');
+    const navDashboardLink = document.getElementById('nav-dashboard-link');
+
+    function updateNavForSignedIn(isSignedIn) {
+        if (navSignoutBtn) navSignoutBtn.classList.toggle('hidden', !isSignedIn);
+        if (navDashboardLink) navDashboardLink.classList.toggle('hidden', !isSignedIn);
+        if (userChip) userChip.classList.toggle('hidden', !isSignedIn);
+
+        if (isSignedIn) {
+            const nm = localStorage.getItem('userName') || 'Dashboard';
+            const gender = localStorage.getItem('userGender');
+            if (userChipName) userChipName.textContent = nm;
+            if (userChipAvatar) {
+                userChipAvatar.src = gender === 'boy' ? 'images/boy.png' : gender === 'girl' ? 'images/girl.png' : 'images/user-icon.png';
+            }
+        }
+    }
+
+    navSignoutBtn?.addEventListener('click', async () => {
+        await window.SupabaseApp?.signOut?.();
+        localStorage.removeItem('userGender');
+        localStorage.removeItem('userBirthdate');
+        localStorage.removeItem('userAge');
+        localStorage.removeItem('userName');
+        document.body.classList.remove('theme-boy', 'theme-girl');
+        document.body.classList.add('theme-guest');
+        setInstructionImagesByGender();
+        if (progressIndicator) progressIndicator.classList.remove('hidden');
+        currentStep = 1;
+        showStep(1);
+        updateNavForSignedIn(false);
+    });
+
+    (async () => {
+        const s = await window.SupabaseApp?.getSession?.();
+        updateNavForSignedIn(!!s?.user?.id);
+        window.SupabaseApp?.onAuthStateChange?.((sess) => updateNavForSignedIn(!!sess?.user?.id));
     })();
 
     googleBtn?.addEventListener('click', async () => {
@@ -199,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!uid) throw new Error('Please sign in first.');
 
             const name = (profileName?.value || '').trim();
-            const gender = String(profileGender?.value || '').toLowerCase();
+            const gender = String(profileForm?.querySelector('input[name="gender"]:checked')?.value || '').toLowerCase();
             const birthdate = String(profileBirthdate?.value || '').trim();
             if (!name) throw new Error('Please enter your name.');
             if (gender !== 'boy' && gender !== 'girl') throw new Error('Please choose boy or girl.');
@@ -216,8 +323,12 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('userBirthdate', saved.birthdate);
             localStorage.setItem('userAge', String(window.Profile?.computeAgeFromBirthdate?.(saved.birthdate) ?? computedAge));
             window.Profile?.applyThemeFromGender?.(saved.gender);
+            document.body.classList.remove('theme-guest');
+            setInstructionImagesByGender();
             profileComplete = true;
-            window.nextStep();
+            if (progressIndicator) progressIndicator.classList.add('hidden');
+            currentStep = 3;
+            showStep(3);
         } catch (err) {
             profileComplete = false;
             if (profileError) profileError.textContent = err?.message || 'Failed to save profile.';
@@ -243,10 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'opt-guidelines': () => { window.location.href = 'guidelines.html'; },
         'opt-report': () => { window.location.href = 'report.html'; },
         'opt-dashboard': () => { window.location.href = 'dashboard.html'; },
-        'opt-red-blue': () => {
-            const ok = window.confirm('You must wear red-blue glasses before starting these exercises. Continue?');
-            if (ok) window.location.href = 'lazytest/index.html?level=6';
-        }
+        // red/blue is now inside Lazy Eye Level 6
     };
     
     Object.keys(routes).forEach((id) => {
