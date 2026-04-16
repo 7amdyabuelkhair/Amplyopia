@@ -1,6 +1,10 @@
 -- Supabase schema for Amplyopia (Auth + Profiles + Scores)
 -- Run this in Supabase SQL editor.
 
+-- If you're migrating from an older schema that had profiles.age NOT NULL,
+-- run this first to avoid "null value in column age" errors:
+-- alter table public.profiles alter column age drop not null;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,

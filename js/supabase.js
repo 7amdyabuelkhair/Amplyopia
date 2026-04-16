@@ -1,6 +1,17 @@
 (() => {
   const supabaseGlobal = window.supabase;
 
+  function computeAgeFromBirthdate(birthdateStr) {
+    if (!birthdateStr) return null;
+    const d = new Date(birthdateStr);
+    if (Number.isNaN(d.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    const m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+    return age >= 0 ? age : null;
+  }
+
   function readConfig() {
     const url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || '';
     const anonKey = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || '';
@@ -75,7 +86,8 @@
     if (!client) return null;
     const { data, error } = await client
       .from('profiles')
-      .select('id,name,gender,birthdate,updated_at')
+      // Include age if it exists in older schemas
+      .select('id,name,gender,birthdate,age,updated_at')
       .eq('id', userId)
       .maybeSingle();
     if (error) throw error;
@@ -84,11 +96,21 @@
 
   async function upsertProfile({ id, name, gender, birthdate }) {
     if (!client) throw new Error('Supabase is not configured.');
-    const payload = { id, name, gender, birthdate, updated_at: new Date().toISOString() };
+    // Backward-compatible: if an older DB schema still has age NOT NULL,
+    // include computed age to avoid insert/update failures.
+    const computedAge = computeAgeFromBirthdate(birthdate);
+    const payload = {
+      id,
+      name,
+      gender,
+      birthdate,
+      ...(typeof computedAge === 'number' ? { age: computedAge } : {}),
+      updated_at: new Date().toISOString()
+    };
     const { data, error } = await client
       .from('profiles')
       .upsert(payload, { onConflict: 'id' })
-      .select('id,name,gender,birthdate')
+      .select('id,name,gender,birthdate,age')
       .single();
     if (error) throw error;
     return data;
