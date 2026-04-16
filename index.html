@@ -76,7 +76,7 @@
                 <div class="progress-line"></div>
                 <div class="progress-step" data-step="2">
                     <div class="step-number">2</div>
-                    <div class="step-label">Your Info</div>
+                    <div class="step-label">Sign in</div>
                 </div>
                 <div class="progress-line"></div>
                 <div class="progress-step" data-step="3">
@@ -127,43 +127,98 @@
                 </div>
             </div>
 
-            <!-- Step 2: Name and Age Input -->
+            <!-- Step 2: Sign in / Sign up (Supabase) + Profile -->
             <div class="wizard-step" id="step-2">
                 <div class="step-content">
                     <div class="step-header">
                         <img src="images/user-icon.png" alt="User Information" class="step-icon" onerror="this.style.display='none';">
-                        <h1 class="step-title">Tell Us About Yourself</h1>
-                        <p class="step-subtitle">We need some basic information to personalize your experience</p>
+                        <h1 class="step-title">Sign in to Continue</h1>
+                        <p class="step-subtitle">Sign in first, then we’ll ask for the child info</p>
                     </div>
                     
-                    <form class="user-form" id="user-form">
-                        <div class="form-group">
-                            <label for="user-name">Your Name</label>
-                            <input type="text" id="user-name" name="name" placeholder="Enter your full name" required>
-                            <div class="form-icon-wrapper">
-                                <img src="images/name-icon.png" alt="Name" class="form-icon" onerror="this.style.display='none';">
-                            </div>
+                    <div class="auth-card" id="auth-card">
+                        <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+                            <button type="button" class="auth-tab active" id="auth-tab-signin" data-auth-tab="signin" role="tab" aria-selected="true">Sign in</button>
+                            <button type="button" class="auth-tab" id="auth-tab-signup" data-auth-tab="signup" role="tab" aria-selected="false">Sign up</button>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="user-age">Your Age</label>
-                            <input type="number" id="user-age" name="age" placeholder="Enter your age" min="1" max="120" required>
-                            <div class="form-icon-wrapper">
-                                <img src="images/age-icon.png" alt="Age" class="form-icon" onerror="this.style.display='none';">
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary btn-prev" onclick="prevStep()">
-                                <span class="btn-arrow">←</span>
-                                Previous
+
+                        <div class="auth-body">
+                            <div class="auth-error" id="auth-error" aria-live="polite"></div>
+
+                            <button type="button" class="btn btn-primary auth-google-btn" id="auth-google-btn">
+                                Continue with Google
                             </button>
-                            <button type="submit" class="btn btn-primary btn-next">
-                                Next
-                                <span class="btn-arrow">→</span>
-                            </button>
+
+                            <div class="auth-divider">
+                                <span>or</span>
+                            </div>
+
+                            <form class="user-form" id="auth-email-form">
+                                <div class="form-group">
+                                    <label for="auth-email">Email</label>
+                                    <input type="email" id="auth-email" name="email" placeholder="you@example.com" autocomplete="email" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="auth-password">Password</label>
+                                    <input type="password" id="auth-password" name="password" placeholder="Your password" autocomplete="current-password" required>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary btn-prev" onclick="prevStep()">
+                                        <span class="btn-arrow">←</span>
+                                        Previous
+                                    </button>
+                                    <button type="submit" class="btn btn-primary btn-next" id="auth-email-submit">
+                                        Continue
+                                        <span class="btn-arrow">→</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                    </div>
+
+                    <div class="auth-card hidden" id="profile-card">
+                        <div class="auth-body">
+                            <div class="auth-success" id="profile-welcome"></div>
+                            <div class="auth-error" id="profile-error" aria-live="polite"></div>
+
+                            <form class="user-form" id="profile-form">
+                                <div class="form-group">
+                                    <label for="profile-name">Your Name</label>
+                                    <input type="text" id="profile-name" name="name" placeholder="Enter your full name" autocomplete="name" required>
+                                    <div class="form-icon-wrapper">
+                                        <img src="images/name-icon.png" alt="Name" class="form-icon" onerror="this.style.display='none';">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="profile-gender">Child Gender</label>
+                                    <select id="profile-gender" name="gender" required>
+                                        <option value="" selected disabled>Choose</option>
+                                        <option value="boy">Boy</option>
+                                        <option value="girl">Girl</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="profile-birthdate">Child Birthday</label>
+                                    <input type="date" id="profile-birthdate" name="birthdate" required>
+                                    <div class="form-icon-wrapper">
+                                        <img src="images/age-icon.png" alt="Age" class="form-icon" onerror="this.style.display='none';">
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary" id="auth-signout-btn">Sign out</button>
+                                    <button type="submit" class="btn btn-primary btn-next">
+                                        Save &amp; Continue
+                                        <span class="btn-arrow">→</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -207,6 +262,14 @@
                             </div>
                             <h3 class="option-title">Report</h3>
                             <p class="option-description">View your test results and history</p>
+                        </button>
+
+                        <button class="option-card" id="opt-dashboard">
+                            <div class="option-image-wrapper">
+                                <img src="images/user-icon.png" alt="Dashboard" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Dashboard</h3>
+                            <p class="option-description">Child profile, age, and total score</p>
                         </button>
 
                         <button class="option-card" id="opt-red-blue">
@@ -259,6 +322,12 @@
         </div>
     </footer>
 
+    <!-- Supabase (Auth + DB) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js" defer></script>
+    <script src="js/supabase.js" defer></script>
+    <script src="js/profile.js" defer></script>
+    <script src="js/score.js" defer></script>
     <script src="js/app.js" defer></script>
     
     <!-- Structured Data (JSON-LD) for SEO -->

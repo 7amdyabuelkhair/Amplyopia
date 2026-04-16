@@ -39,6 +39,13 @@ const levels = [
             { name: "Maze Game", play: mazeGame },
             { name: "Snake Game", play: snakeGame }
         ]
+    },
+    {
+        name: "Level 6 - Red/Blue Glasses",
+        games: [
+            { name: "Front & Back", play: redBlueFrontBackGame },
+            { name: "Motor Fusion", play: redBlueMotorFusionGame }
+        ]
     }
 ];
 
@@ -73,6 +80,7 @@ const level2Btn = document.getElementById('level2-btn');
 const level3Btn = document.getElementById('level3-btn');
 const level4Btn = document.getElementById('level4-btn');
 const lazyEyeBtn = document.getElementById('lazy-eye-btn');
+const level6Btn = document.getElementById('level6-btn');
 
 function show(el) { if (el) el.classList.remove('hidden'); }
 function hide(...els) { els.forEach(e => e.classList.add('hidden')); }
@@ -83,6 +91,17 @@ level2Btn.onclick = () => openLevel(1);
 level3Btn.onclick = () => openLevel(2);
 if (level4Btn) level4Btn.onclick = () => openLevel(3);
 if (lazyEyeBtn) lazyEyeBtn.onclick = () => openLevel(4);
+if (level6Btn) level6Btn.onclick = () => openLevel(5);
+
+// Allow deep-linking directly to a level (e.g. lazytest/index.html?level=6)
+try {
+    const q = new URLSearchParams(window.location.search);
+    const lvlNum = Number(q.get('level'));
+    if (lvlNum >= 1 && lvlNum <= levels.length) {
+        if (lvlNum === 6 && level6Btn) level6Btn.disabled = false;
+        setTimeout(() => openLevel(lvlNum - 1), 0);
+    }
+} catch (_) {}
 
 function openLevel(lvl) {
     currentLevel = lvl;
@@ -124,6 +143,18 @@ function showGameResult(score, encouragement, callback) {
     scoreMsg.textContent = `You scored: ${score}`;
     levelScores[currentLevel][currentGame] = score;
     completedGames[currentLevel][currentGame] = true;
+
+    // Persist score event (local + Supabase if signed in)
+    try {
+        const lvlName = levels[currentLevel]?.name || `Level ${currentLevel + 1}`;
+        const gameName = levels[currentLevel]?.games?.[currentGame]?.name || `Game ${currentGame + 1}`;
+        window.Score?.addPoints?.({
+            game_id: `lazytest:l${currentLevel + 1}:${gameName}`.toLowerCase().replace(/\s+/g, '-'),
+            points: score,
+            meta: { level: currentLevel + 1, levelName: lvlName, gameIndex: currentGame + 1, gameName }
+        });
+    } catch (_) {}
+
     backToGamesBtn.onclick = () => {
         hide(gameResult);
         updateGamesList();
@@ -162,6 +193,9 @@ function showGiftScreen() {
             openLevel(3);
         } else if (currentLevel === 3) {
             openLevel(4);
+        } else if (currentLevel === 4) {
+            if (level6Btn) level6Btn.disabled = false;
+            openLevel(5);
         } else {
             show(finalScreen);
             finalScore.innerHTML = `<b>Total Score: ${levelScores.flat().reduce((a,b)=>a+b,0)}</b>`;
@@ -181,6 +215,7 @@ playAgainBtn.onclick = () => {
     level2Btn.disabled = false;
     level3Btn.disabled = true;
     if (level4Btn) level4Btn.disabled = true;
+    if (level6Btn) level6Btn.disabled = true;
     hide(finalScreen, gameArea, gameResult, giftScreen, levelGames);
     show(mainMenu);
 }
@@ -189,10 +224,176 @@ returnMainBtn.onclick = () => {
     show(mainMenu);
 }
 
+/* ================== LEVEL 6 (RED/BLUE) ================== */
+const RB_EX1_IMAGES = [
+    "front1.png",
+    "front2.png",
+    "behind3.png",
+    "behind4.png",
+    "behind5.png",
+    "front6.png",
+    "behind7.png",
+    "front8.png",
+    "front9.png",
+    "front10.png"
+];
+
+const RB_EX2_IMAGES = [
+    // Add your motor-fusion images/GIFs in red-blue/ex-2 and list them here, e.g.:
+    // "fusion-1.gif",
+];
+
+function rbExpectedAnswer(filename) {
+    const f = String(filename || '').toLowerCase();
+    if (f.includes('front')) return 'front';
+    if (f.includes('back') || f.includes('behind')) return 'back';
+    return '';
+}
+
+function redBlueFrontBackGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    let idx = 0;
+    let score = 0;
+    let answered = new Set();
+
+    gameArea.innerHTML = `
+      <div class="game-box" style="max-width:820px;margin:0 auto;background:#fff;border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(248,117,185,0.18);border:2px solid rgba(248,117,185,0.25);">
+        <h2 style="margin:0 0 8px 0;color:#f875b9;">Red/Blue - Front &amp; Back</h2>
+        <div style="color:#666;margin-bottom:10px;">Wear your red/blue glasses. Decide if the object is in the <b>front</b> or <b>back</b>.</div>
+        <div style="width:100%;min-height:280px;border:2px dashed rgba(248,117,185,0.45);border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;">
+          <img id="rb-ex1-img" alt="Front/Back exercise" style="max-width:100%;max-height:60vh;object-fit:contain;">
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:14px 0;">
+          <button id="rb-ex1-prev" class="small-btn" type="button">Prev</button>
+          <button id="rb-ex1-front" class="small-btn" type="button" style="background:#f875b9;color:#fff;border:none;">Front</button>
+          <button id="rb-ex1-back" class="small-btn" type="button" style="background:#f875b9;color:#fff;border:none;">Back</button>
+          <button id="rb-ex1-next" class="small-btn" type="button">Next</button>
+          <button id="rb-ex1-finish" class="small-btn" type="button" style="background:#2ecc71;color:#fff;border:none;">Finish</button>
+        </div>
+        <div id="rb-ex1-status" style="text-align:center;color:#666;min-height:22px;"></div>
+        <div style="text-align:center;color:#396485;font-weight:700;margin-top:6px;">Score: <span id="rb-ex1-score">0</span></div>
+      </div>
+    `;
+
+    const img = document.getElementById('rb-ex1-img');
+    const status = document.getElementById('rb-ex1-status');
+    const scoreEl = document.getElementById('rb-ex1-score');
+
+    function src(name) { return `../red-blue/ex-1/${name}`; }
+    function showImage() {
+        const name = RB_EX1_IMAGES[idx];
+        img.src = src(name);
+        status.textContent = `Image ${idx + 1} / ${RB_EX1_IMAGES.length}`;
+    }
+
+    function answer(choice) {
+        const name = RB_EX1_IMAGES[idx];
+        const expect = rbExpectedAnswer(name);
+        if (!expect) {
+            status.textContent = 'This image filename must include front/back (or behind).';
+            return;
+        }
+        if (choice === expect) {
+            if (!answered.has(name)) {
+                answered.add(name);
+                score += 1;
+                scoreEl.textContent = String(score);
+            }
+            status.textContent = 'Correct!';
+            idx = (idx + 1) % RB_EX1_IMAGES.length;
+            showImage();
+        } else {
+            status.textContent = `Wrong. Correct answer is ${expect}.`;
+        }
+    }
+
+    document.getElementById('rb-ex1-prev').onclick = () => { idx = (idx - 1 + RB_EX1_IMAGES.length) % RB_EX1_IMAGES.length; showImage(); };
+    document.getElementById('rb-ex1-next').onclick = () => { idx = (idx + 1) % RB_EX1_IMAGES.length; showImage(); };
+    document.getElementById('rb-ex1-front').onclick = () => answer('front');
+    document.getElementById('rb-ex1-back').onclick = () => answer('back');
+    document.getElementById('rb-ex1-finish').onclick = () => showGameResult(score, 'Great job!', startGameCallback);
+
+    showImage();
+}
+
+function redBlueMotorFusionGame(startGameCallback) {
+    hide(levelGames);
+    show(gameArea);
+
+    let idx = 0;
+    let startedAt = null;
+    let totalSeconds = 0;
+
+    gameArea.innerHTML = `
+      <div class="game-box" style="max-width:820px;margin:0 auto;background:#fff;border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(248,117,185,0.18);border:2px solid rgba(248,117,185,0.25);">
+        <h2 style="margin:0 0 8px 0;color:#f875b9;">Red/Blue - Motor Fusion</h2>
+        <div style="color:#666;margin-bottom:10px;">Try to fuse the image into one. Press <b>Start hold</b>, keep fusing, then press <b>Done</b>.</div>
+        <div style="width:100%;min-height:280px;border:2px dashed rgba(248,117,185,0.45);border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;">
+          <img id="rb-ex2-img" alt="Motor fusion exercise" style="max-width:100%;max-height:60vh;object-fit:contain;">
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:14px 0;">
+          <button id="rb-ex2-prev" class="small-btn" type="button">Prev</button>
+          <button id="rb-ex2-next" class="small-btn" type="button">Next</button>
+          <button id="rb-ex2-start" class="small-btn" type="button" style="background:#f875b9;color:#fff;border:none;">Start hold</button>
+          <button id="rb-ex2-done" class="small-btn" type="button" style="background:#2ecc71;color:#fff;border:none;">Done</button>
+          <button id="rb-ex2-finish" class="small-btn" type="button" style="background:#2ecc71;color:#fff;border:none;">Finish</button>
+        </div>
+        <div id="rb-ex2-status" style="text-align:center;color:#666;min-height:22px;"></div>
+        <div style="text-align:center;color:#396485;font-weight:700;margin-top:6px;">Points: <span id="rb-ex2-points">0</span></div>
+      </div>
+    `;
+
+    const img = document.getElementById('rb-ex2-img');
+    const status = document.getElementById('rb-ex2-status');
+    const pointsEl = document.getElementById('rb-ex2-points');
+
+    function src(name) { return `../red-blue/ex-2/${name}`; }
+    function showImage() {
+        if (!RB_EX2_IMAGES.length) {
+            img.removeAttribute('src');
+            status.textContent = 'No motor-fusion images yet. Add files to red-blue/ex-2 and list them in lazytest/script.js (RB_EX2_IMAGES).';
+            return;
+        }
+        img.src = src(RB_EX2_IMAGES[idx]);
+        status.textContent = `Image ${idx + 1} / ${RB_EX2_IMAGES.length}`;
+    }
+
+    document.getElementById('rb-ex2-prev').onclick = () => { if (!RB_EX2_IMAGES.length) return; idx = (idx - 1 + RB_EX2_IMAGES.length) % RB_EX2_IMAGES.length; showImage(); };
+    document.getElementById('rb-ex2-next').onclick = () => { if (!RB_EX2_IMAGES.length) return; idx = (idx + 1) % RB_EX2_IMAGES.length; showImage(); };
+
+    document.getElementById('rb-ex2-start').onclick = () => {
+        startedAt = Date.now();
+        status.textContent = 'Holding... press Done when you finish fusing.';
+    };
+    document.getElementById('rb-ex2-done').onclick = () => {
+        if (!startedAt) {
+            status.textContent = 'Press Start hold first.';
+            return;
+        }
+        const secs = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+        startedAt = null;
+        totalSeconds += secs;
+        pointsEl.textContent = String(totalSeconds);
+        status.textContent = `Nice! Added ${secs}s. Total hold time: ${totalSeconds}s.`;
+    };
+
+    document.getElementById('rb-ex2-finish').onclick = () => showGameResult(totalSeconds, 'Well done!', startGameCallback);
+
+    showImage();
+}
+
 /* =========== SPLASH =========== */
 
 /* =========== HOVER SOUND EFFECT =========== */
 document.addEventListener('DOMContentLoaded', function () {
+    try {
+        const gender = localStorage.getItem('userGender');
+        if (gender && window.Profile?.applyThemeFromGender) {
+            window.Profile.applyThemeFromGender(gender);
+        }
+    } catch (_) {}
     const hoverAudio = document.getElementById('btn-hover-sound');
     function isInGameBox(el) {
         let p = el.parentElement;

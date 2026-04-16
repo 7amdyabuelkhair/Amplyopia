@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Amplyopia - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="logo" href="index.html">
+                <span class="logo-text">amplyopia</span>
+            </a>
+            <nav class="site-nav" aria-label="Primary">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="lazytest/index.html">Lazy Eye</a></li>
+                    <li><a href="vision-test.html">Vision Test</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="wizard-step active">
+                <div class="step-content">
+                    <div class="step-header">
+                        <img src="images/user-icon.png" alt="Dashboard" class="step-icon" onerror="this.style.display='none';">
+                        <h1 class="step-title">Child Dashboard</h1>
+                        <p class="step-subtitle">Profile and total points</p>
+                    </div>
+
+                    <div class="auth-card">
+                        <div class="auth-body">
+                            <div class="auth-error" id="dash-error" aria-live="polite"></div>
+
+                            <div style="display:grid;gap:10px;">
+                                <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                                    <div><b>Name</b></div>
+                                    <div id="dash-name">-</div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                                    <div><b>Gender</b></div>
+                                    <div id="dash-gender">-</div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                                    <div><b>Birthday</b></div>
+                                    <div id="dash-birthdate">-</div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                                    <div><b>Age</b></div>
+                                    <div id="dash-age">-</div>
+                                </div>
+                                <div style="height:1px;background:var(--border-color);margin:8px 0;"></div>
+                                <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                                    <div><b>Total score</b></div>
+                                    <div id="dash-score" style="font-weight:800;">-</div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top:10px;">
+                                <button type="button" class="btn btn-secondary" id="dash-back">Back</button>
+                                <button type="button" class="btn btn-primary" id="dash-refresh">Refresh</button>
+                            </div>
+
+                            <div class="form-actions" style="margin-top:0;">
+                                <button type="button" class="btn btn-secondary" id="dash-signout">Sign out</button>
+                                <a class="btn btn-primary" href="index.html">Edit profile</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Amplyopia. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/score.js"></script>
+    <script>
+        (function () {
+            const yearEl = document.getElementById('year');
+            if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+            const errEl = document.getElementById('dash-error');
+            const nameEl = document.getElementById('dash-name');
+            const genderEl = document.getElementById('dash-gender');
+            const birthEl = document.getElementById('dash-birthdate');
+            const ageEl = document.getElementById('dash-age');
+            const scoreEl = document.getElementById('dash-score');
+
+            async function load() {
+                try {
+                    if (errEl) errEl.textContent = '';
+
+                    const session = await window.SupabaseApp?.getSession?.();
+                    const uid = session?.user?.id;
+                    if (!uid) {
+                        if (errEl) errEl.textContent = 'Please sign in first from the home page.';
+                        return;
+                    }
+
+                    const profile = await window.SupabaseApp?.getProfile?.(uid);
+                    const name = profile?.name || localStorage.getItem('userName') || '-';
+                    const gender = profile?.gender || localStorage.getItem('userGender') || '-';
+                    const birthdate = profile?.birthdate || localStorage.getItem('userBirthdate') || '-';
+                    const age = window.Profile?.computeAgeFromBirthdate?.(birthdate);
+
+                    if (gender && window.Profile?.applyThemeFromGender) window.Profile.applyThemeFromGender(gender);
+
+                    if (nameEl) nameEl.textContent = name;
+                    if (genderEl) genderEl.textContent = gender === 'boy' ? 'Boy' : gender === 'girl' ? 'Girl' : gender;
+                    if (birthEl) birthEl.textContent = birthdate;
+                    if (ageEl) ageEl.textContent = typeof age === 'number' ? String(age) : '-';
+
+                    let total = null;
+                    try { total = await window.SupabaseApp?.getTotalScore?.(); } catch (_) {}
+                    if (total === null || typeof total === 'undefined') total = window.Score?.getLocalTotal?.() ?? 0;
+                    if (scoreEl) scoreEl.textContent = String(total);
+                } catch (e) {
+                    if (errEl) errEl.textContent = e?.message || 'Failed to load dashboard.';
+                }
+            }
+
+            document.getElementById('dash-back')?.addEventListener('click', () => {
+                if (window.history.length > 1) window.history.back();
+                else window.location.href = 'index.html';
+            });
+            document.getElementById('dash-refresh')?.addEventListener('click', () => load());
+            document.getElementById('dash-signout')?.addEventListener('click', async () => {
+                await window.SupabaseApp?.signOut?.();
+                window.location.href = 'index.html';
+            });
+
+            load();
+        })();
+    </script>
+</body>
+</html>
+

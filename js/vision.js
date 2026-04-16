@@ -13,31 +13,18 @@
 
     if (!video || !startBtn || !distanceStatus || !stageEl || !letterEl) return;
 
-    // Check if patient name and age are in localStorage, if not, prompt for them
-    function ensurePatientInfo() {
+    // Ensure child info exists (filled during main sign-in flow)
+    (function ensureChildInfo() {
         const userName = localStorage.getItem('userName');
         const userAge = localStorage.getItem('userAge');
-        
         if (!userName || !userAge) {
-            const name = prompt('Please enter the patient name:');
-            const age = prompt('Please enter the patient age:');
-            
-            if (name && name.trim()) {
-                localStorage.setItem('userName', name.trim());
-            }
-            if (age && age.trim()) {
-                localStorage.setItem('userAge', age.trim());
-            }
-            
-            // If still no name/age, show warning
-            if (!localStorage.getItem('userName') || !localStorage.getItem('userAge')) {
-                console.warn('Patient name or age not provided. Test results may not be searchable.');
-            }
+            console.warn('Child profile not found in storage. Open the main page and complete sign-in/profile first.');
         }
-    }
-
-    // Check patient info when page loads
-    ensurePatientInfo();
+        const gender = localStorage.getItem('userGender');
+        if (gender && window.Profile?.applyThemeFromGender) {
+            window.Profile.applyThemeFromGender(gender);
+        }
+    })();
 
     // For phone usage distance (arm's length): ~0.30–0.50 m
     const idealMin = 0.30; // meters
@@ -525,6 +512,15 @@
             if (!patientName || !patientAge) {
                 console.warn('⚠️ WARNING: Patient name or age was not found in localStorage when saving test results!');
             }
+
+            // Award points for completing a vision test (local + Supabase if signed in)
+            try {
+                await window.Score?.addPoints?.({
+                    game_id: 'vision-test:completed',
+                    points: 10,
+                    meta: { rightEye: rightResult.acuity, leftEye: leftResult.acuity }
+                });
+            } catch (_) {}
         } catch (error) {
             console.error('Error saving vision result:', error);
         }

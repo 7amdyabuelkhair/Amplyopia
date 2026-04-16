@@ -114,7 +114,16 @@
         </section>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/profile.js"></script>
+    <script src="../js/score.js"></script>
     <script>
+        try {
+            const gender = localStorage.getItem('userGender');
+            if (gender && window.Profile?.applyThemeFromGender) window.Profile.applyThemeFromGender(gender);
+        } catch (_) {}
         // Optional manual fallback list for Ex1 images.
         // If auto-discovery works, this list is ignored.
         const EX1_FALLBACK = [
@@ -205,6 +214,13 @@
             }
             if (choice === expect) {
                 ex1Status.textContent = 'Correct! Moving to next image...';
+                try {
+                    window.Score?.addPoints?.({
+                        game_id: 'red-blue:front-back',
+                        points: 1,
+                        meta: { filename: EX1_IMAGES[ex1Index], answer: choice }
+                    });
+                } catch (_) {}
                 setTimeout(() => {
                     if (!EX1_IMAGES.length) return;
                     ex1Index = (ex1Index + 1) % EX1_IMAGES.length;
