@@ -2921,10 +2921,14 @@ function mazeGame(startGameCallback) {
 
     const canvas = document.getElementById("mz-canvas");
     const ctx = canvas.getContext("2d");
+    const mazeWrap = document.getElementById("mz-wrap");
     const stageEl = document.getElementById("mz-stage");
     const movesEl = document.getElementById("mz-moves");
     const timeEl = document.getElementById("mz-time");
     const scoreEl = document.getElementById("mz-score");
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeTracking = false;
 
     function setupStage(idx) {
         stageIndex = idx;
@@ -3023,6 +3027,39 @@ function mazeGame(startGameCallback) {
     document.getElementById("mz-down").onclick = () => step(1, 0);
     document.getElementById("mz-right").onclick = () => step(0, 1);
     document.getElementById("mz-left").onclick = () => step(0, -1);
+
+    // Mobile swipe controls: map swipe direction to the same movement logic.
+    mazeWrap.addEventListener("touchstart", (e) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeTracking = true;
+    }, { passive: true });
+
+    mazeWrap.addEventListener("touchend", (e) => {
+        if (!swipeTracking || !e.changedTouches || e.changedTouches.length !== 1) return;
+        swipeTracking = false;
+
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - swipeStartX;
+        const dy = touch.clientY - swipeStartY;
+        const minSwipe = 24;
+        if (Math.abs(dx) < minSwipe && Math.abs(dy) < minSwipe) return;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) step(0, 1);
+            else step(0, -1);
+        } else {
+            if (dy > 0) step(1, 0);
+            else step(-1, 0);
+        }
+    }, { passive: true });
+
+    mazeWrap.addEventListener("touchmove", (e) => {
+        if (!swipeTracking) return;
+        e.preventDefault();
+    }, { passive: false });
+
     document.getElementById("mz-back").onclick = () => {
         clearInterval(timer);
         hide(gameArea);
