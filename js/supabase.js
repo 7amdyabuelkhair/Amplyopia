@@ -50,15 +50,20 @@
     return () => data?.subscription?.unsubscribe?.();
   }
 
-  async function signInWithGoogle() {
-    if (!client) throw new Error('Supabase is not configured.');
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
-    const { error } = await client.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo }
-    });
-    if (error) throw error;
-  }
+async function signInWithGoogle() {
+  if (!client) throw new Error('Supabase is not configured.');
+
+  const redirectTo = 'https://amplyopia.com/auth/callback';
+
+  const { error } = await client.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+    },
+  });
+
+  if (error) throw error;
+}
 
   async function signInWithPassword(email, password) {
     if (!client) throw new Error('Supabase is not configured.');
