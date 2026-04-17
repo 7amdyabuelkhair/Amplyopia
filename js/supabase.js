@@ -53,7 +53,8 @@
 async function signInWithGoogle() {
   if (!client) throw new Error('Supabase is not configured.');
 
-  const redirectTo = 'https://amplyopia.com/auth/callback';
+  // Must point to an existing static page on GitHub Pages.
+  const redirectTo = `${window.location.origin}/index.html`;
 
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
