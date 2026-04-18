@@ -171,6 +171,16 @@
                                     <input type="password" id="auth-password" name="password" placeholder="Your password" autocomplete="current-password" required>
                                 </div>
 
+                                <div class="form-group hidden" id="signup-consent-group">
+                                    <label class="consent-checkbox">
+                                        <input type="checkbox" id="signup-terms-checkbox" name="signup_terms">
+                                        <span>
+                                            I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+                                        </span>
+                                    </label>
+                                    <p class="consent-error" id="signup-consent-error" aria-live="polite"></p>
+                                </div>
+
                                 <div class="form-actions">
                                     <button type="button" class="btn btn-secondary btn-prev" onclick="prevStep()">
                                         <span class="btn-arrow">←</span>
@@ -322,12 +332,33 @@
                         <li><a href="report.html">Report</a></li>
                     </ul>
                 </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms &amp; Conditions</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
             </div>
             <div class="footer-bottom">
                 <p>© <span id="year"></span> Amplyopia. All rights reserved.</p>
+                <p><a href="terms.html">Terms &amp; Conditions</a> | <a href="privacy.html">Privacy Policy</a></p>
             </div>
         </div>
     </footer>
+
+    <div class="consent-modal hidden" id="terms-reconsent-modal" role="dialog" aria-modal="true" aria-labelledby="terms-reconsent-title">
+        <div class="consent-modal-card">
+            <h2 id="terms-reconsent-title">Please review and accept our legal terms</h2>
+            <p>To continue using Amplyopia, please confirm that you agree to our latest Terms &amp; Conditions and Privacy Policy.</p>
+            <label class="consent-checkbox">
+                <input type="checkbox" id="reconsent-checkbox">
+                <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+            </label>
+            <p class="consent-error" id="reconsent-error" aria-live="polite"></p>
+            <button type="button" class="btn btn-primary" id="reconsent-accept-btn">Accept and Continue</button>
+        </div>
+    </div>
 
     <!-- Supabase (Auth + DB) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -335,6 +366,7 @@
     <script src="js/supabase.js" defer></script>
     <script src="js/profile.js" defer></script>
     <script src="js/score.js" defer></script>
+    <script src="js/legal-consent.js" defer></script>
     <script src="js/app.js" defer></script>
     
     <!-- Structured Data (JSON-LD) for SEO -->

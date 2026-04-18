@@ -688,6 +688,72 @@ body::before {
     font-size: 14px;
 }
 
+.consent-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-dark);
+    line-height: 1.5;
+}
+
+.consent-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #7e57c2;
+}
+
+.consent-checkbox a {
+    color: #5b4acb;
+    font-weight: 700;
+}
+
+.consent-error {
+    min-height: 18px;
+    margin-top: 8px;
+    color: #d63031;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.consent-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(18, 18, 28, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.consent-modal-card {
+    width: min(520px, 100%);
+    border-radius: 20px;
+    border: 2px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), var(--tint-3));
+    box-shadow: 0 16px 50px var(--shadow-strong);
+    padding: 24px;
+    display: grid;
+    gap: 14px;
+}
+
+.consent-modal-card h2 {
+    font-size: 24px;
+}
+
+.footer-bottom a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.footer-bottom a:hover {
+    color: var(--text-dark);
+}
+
 .profile-grid {
     display: grid;
     gap: 18px;
@@ -1248,7 +1314,7 @@ body::before {
     }
     
     .footer-content {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 

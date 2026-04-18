@@ -106,14 +106,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const authPassword = document.getElementById('auth-password');
     const authEmailSubmit = document.getElementById('auth-email-submit');
     const googleBtn = document.getElementById('auth-google-btn');
+    const signupConsentGroup = document.getElementById('signup-consent-group');
+    const signupTermsCheckbox = document.getElementById('signup-terms-checkbox');
+    const signupConsentError = document.getElementById('signup-consent-error');
 
     const profileForm = document.getElementById('profile-form');
     const profileName = document.getElementById('profile-name');
     const profileGender = document.getElementById('profile-gender');
     const profileBirthdate = document.getElementById('profile-birthdate');
     const signOutBtn = document.getElementById('auth-signout-btn');
+    const reconsentModal = document.getElementById('terms-reconsent-modal');
+    const reconsentCheckbox = document.getElementById('reconsent-checkbox');
+    const reconsentAcceptBtn = document.getElementById('reconsent-accept-btn');
+    const reconsentError = document.getElementById('reconsent-error');
 
     let authMode = 'signin';
+    let pendingTermsAcceptedAt = null;
+    let hasAcceptedTerms = false;
 
     function setAuthMode(mode) {
         authMode = mode === 'signup' ? 'signup' : 'signin';
@@ -129,6 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authEmailSubmit) {
             authEmailSubmit.firstChild && (authEmailSubmit.firstChild.nodeValue = authMode === 'signup' ? 'Create account ' : 'Continue ');
         }
+        if (signupConsentGroup) signupConsentGroup.classList.toggle('hidden', authMode !== 'signup');
+        if (signupTermsCheckbox) signupTermsCheckbox.required = authMode === 'signup';
+        if (signupConsentError) signupConsentError.textContent = '';
         if (authError) authError.textContent = '';
     }
 
@@ -145,6 +157,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function showProfileUI() {
         authCard?.classList.add('hidden');
         profileCard?.classList.remove('hidden');
+    }
+
+    function setTermsState({ accepted, acceptedAt }) {
+        hasAcceptedTerms = !!accepted;
+        if (hasAcceptedTerms) {
+            localStorage.setItem('accepted_terms', 'true');
+            if (acceptedAt) localStorage.setItem('accepted_terms_at', String(acceptedAt));
+        }
+    }
+
+    function showReconsentModal(show) {
+        if (!reconsentModal) return;
+        reconsentModal.classList.toggle('hidden', !show);
     }
 
     function isEditProfileMode() {
@@ -169,6 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
 
             const profile = await window.SupabaseApp?.getProfile?.(session.user.id);
+            setTermsState({
+                accepted: profile?.accepted_terms === true || localStorage.getItem('accepted_terms') === 'true',
+                acceptedAt: profile?.accepted_terms_at || localStorage.getItem('accepted_terms_at')
+            });
+
             if (profile?.name) profileName.value = profile.name;
             if (profile?.gender && profileGender) profileGender.value = String(profile.gender);
             if (profile?.birthdate && profileBirthdate) profileBirthdate.value = String(profile.birthdate);
@@ -205,6 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 profileComplete = false;
             }
+
+            if (!hasAcceptedTerms) showReconsentModal(true);
         } catch (e) {
             showProfileUI();
             profileComplete = false;
@@ -250,6 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
         localStorage.removeItem('userName');
+        localStorage.removeItem('accepted_terms');
+        localStorage.removeItem('accepted_terms_at');
         document.body.classList.remove('theme-boy', 'theme-girl');
         document.body.classList.add('theme-guest');
         setInstructionImagesByGender();
@@ -278,10 +312,16 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         try {
             if (authError) authError.textContent = '';
+            if (signupConsentError) signupConsentError.textContent = '';
             const email = (authEmail?.value || '').trim();
             const pass = authPassword?.value || '';
             if (!email || !pass) throw new Error('Please enter email and password.');
             if (authMode === 'signup') {
+                if (!signupTermsCheckbox?.checked) {
+                    if (signupConsentError) signupConsentError.textContent = 'You must agree to the Terms & Conditions and Privacy Policy to create an account.';
+                    return;
+                }
+                pendingTermsAcceptedAt = new Date().toISOString();
                 await window.SupabaseApp?.signUp?.(email, pass);
                 if (authError) authError.textContent = 'Check your email to confirm your account (if enabled). You can also sign in now.';
             } else {
@@ -294,6 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     signOutBtn?.addEventListener('click', async () => {
         await window.SupabaseApp?.signOut?.();
+        localStorage.removeItem('accepted_terms');
+        localStorage.removeItem('accepted_terms_at');
         showAuthUI();
     });
 
@@ -317,11 +359,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Birthday is not valid.');
             }
 
-            const saved = await window.SupabaseApp?.upsertProfile?.({ id: uid, name, gender, birthdate });
+            const acceptedAt = pendingTermsAcceptedAt || localStorage.getItem('accepted_terms_at') || new Date().toISOString();
+            const saved = await window.SupabaseApp?.upsertProfile?.({
+                id: uid,
+                name,
+                gender,
+                birthdate,
+                acceptedTerms: true,
+                acceptedTermsAt: acceptedAt
+            });
             localStorage.setItem('userName', saved.name);
             localStorage.setItem('userGender', saved.gender);
             localStorage.setItem('userBirthdate', saved.birthdate);
             localStorage.setItem('userAge', String(window.Profile?.computeAgeFromBirthdate?.(saved.birthdate) ?? computedAge));
+            setTermsState({ accepted: true, acceptedAt: saved?.accepted_terms_at || acceptedAt });
+            pendingTermsAcceptedAt = null;
             window.Profile?.applyThemeFromGender?.(saved.gender);
             document.body.classList.remove('theme-guest');
             setInstructionImagesByGender();
@@ -332,6 +384,25 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             profileComplete = false;
             if (profileError) profileError.textContent = err?.message || 'Failed to save profile.';
+        }
+    });
+
+    reconsentAcceptBtn?.addEventListener('click', async () => {
+        try {
+            if (reconsentError) reconsentError.textContent = '';
+            if (!reconsentCheckbox?.checked) {
+                if (reconsentError) reconsentError.textContent = 'Please confirm agreement before continuing.';
+                return;
+            }
+            const session = await window.SupabaseApp?.getSession?.();
+            const uid = session?.user?.id;
+            if (!uid) throw new Error('Please sign in first.');
+            const acceptedAt = new Date().toISOString();
+            await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
+            setTermsState({ accepted: true, acceptedAt });
+            showReconsentModal(false);
+        } catch (err) {
+            if (reconsentError) reconsentError.textContent = err?.message || 'Failed to save your agreement.';
         }
     });
 

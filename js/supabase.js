@@ -93,14 +93,14 @@ async function signInWithGoogle() {
     const { data, error } = await client
       .from('profiles')
       // Include age if it exists in older schemas
-      .select('id,name,gender,birthdate,age,updated_at')
+      .select('id,name,gender,birthdate,age,accepted_terms,accepted_terms_at,updated_at')
       .eq('id', userId)
       .maybeSingle();
     if (error) throw error;
     return data || null;
   }
 
-  async function upsertProfile({ id, name, gender, birthdate }) {
+  async function upsertProfile({ id, name, gender, birthdate, acceptedTerms, acceptedTermsAt }) {
     if (!client) throw new Error('Supabase is not configured.');
     // Backward-compatible: if an older DB schema still has age NOT NULL,
     // include computed age to avoid insert/update failures.
@@ -111,15 +111,52 @@ async function signInWithGoogle() {
       gender,
       birthdate,
       ...(typeof computedAge === 'number' ? { age: computedAge } : {}),
+      ...(typeof acceptedTerms === 'boolean' ? { accepted_terms: acceptedTerms } : {}),
+      ...(acceptedTermsAt ? { accepted_terms_at: acceptedTermsAt } : {}),
       updated_at: new Date().toISOString()
     };
     const { data, error } = await client
       .from('profiles')
       .upsert(payload, { onConflict: 'id' })
-      .select('id,name,gender,birthdate,age')
+      .select('id,name,gender,birthdate,age,accepted_terms,accepted_terms_at')
       .single();
     if (error) throw error;
     return data;
+  }
+
+  async function saveTermsConsent({ userId, acceptedAt }) {
+    if (!client) throw new Error('Supabase is not configured.');
+    if (!userId) throw new Error('User id is required.');
+    const timestamp = acceptedAt || new Date().toISOString();
+
+    const payload = {
+      accepted_terms: true,
+      accepted_terms_at: timestamp,
+      updated_at: new Date().toISOString()
+    };
+
+    let result = await client
+      .from('profiles')
+      .update(payload)
+      .eq('id', userId)
+      .select('id,accepted_terms,accepted_terms_at')
+      .maybeSingle();
+
+    if (!result.error && result.data) return result.data;
+
+    const upsertPayload = {
+      id: userId,
+      ...payload
+    };
+
+    result = await client
+      .from('profiles')
+      .upsert(upsertPayload, { onConflict: 'id' })
+      .select('id,accepted_terms,accepted_terms_at')
+      .single();
+
+    if (result.error) throw result.error;
+    return result.data;
   }
 
   async function addScoreEvent({ game_id, points, meta }) {
@@ -176,6 +213,7 @@ async function signInWithGoogle() {
     signOut,
     getProfile,
     upsertProfile,
+    saveTermsConsent,
     addScoreEvent,
     getTotalScore,
     listScores

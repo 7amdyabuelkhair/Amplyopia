@@ -79,6 +79,11 @@
 
 <audio id="btn-hover-sound" src="click-21156.mp3" preload="auto"></audio>
 
+<footer style="padding:20px;text-align:center;">
+    <p>© <span id="year"></span> Amplyopia</p>
+    <p><a href="../terms.html">Terms &amp; Conditions</a> | <a href="../privacy.html">Privacy Policy</a></p>
+</footer>
+
 <!-- Lazy-eye Firebase project (separate from vision test) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -98,6 +103,13 @@
 <script src="../js/supabase.js"></script>
 <script src="../js/profile.js"></script>
 <script src="../js/score.js"></script>
+<script src="../js/legal-consent.js"></script>
 <script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const yearEl = document.getElementById('year');
+        if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+    });
+</script>
 </body>
 </html>

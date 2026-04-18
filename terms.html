@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terms &amp; Conditions | Amplyopia</title>
+    <meta name="description" content="Terms and Conditions for using Amplyopia vision testing and lazy eye training services.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="logo" href="index.html"><span class="logo-text">amplyopia</span></a>
+            <nav class="site-nav" aria-label="Primary">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="section">
+        <div class="container">
+            <h1>Terms &amp; Conditions</h1>
+            <p class="landing-note">Effective date: April 18, 2026</p>
+
+            <div class="auth-card">
+                <div class="auth-body">
+                    <h3>1) Acceptance of Terms</h3>
+                    <p>By creating an account, signing in, or using Amplyopia, you agree to these Terms &amp; Conditions and our Privacy Policy. If you do not agree, please stop using the service.</p>
+
+                    <h3>2) User Responsibilities</h3>
+                    <p>You agree to provide accurate information, use the app lawfully, and avoid any action that could harm the platform, other users, or the accuracy of test data.</p>
+
+                    <h3>3) Account Responsibility</h3>
+                    <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us promptly if you suspect unauthorized access.</p>
+
+                    <h3>4) Game Score Storage and Usage</h3>
+                    <p>Amplyopia stores in-game scores and related progress data to provide dashboards, reports, and personalized training experiences. Scores may be analyzed in aggregate to improve game quality and therapy outcomes.</p>
+
+                    <h3>5) Medical Disclaimer</h3>
+                    <p>Amplyopia is a support and screening tool and does not replace professional diagnosis or treatment. Always consult a qualified eye-care professional for medical advice.</p>
+
+                    <h3>6) Termination</h3>
+                    <p>We may suspend or terminate access for misuse, policy violations, illegal behavior, or actions that risk system security or user safety. You may stop using the service at any time.</p>
+
+                    <h3>7) Updates to Terms</h3>
+                    <p>We may update these Terms from time to time. When material updates are made, users may be asked to review and accept the updated terms before continuing to use key features.</p>
+
+                    <h3>8) Contact</h3>
+                    <p>For legal or account-related questions, contact the Amplyopia team through your official support channel.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Amplyopia. All rights reserved.</p>
+                <p><a href="terms.html">Terms &amp; Conditions</a> | <a href="privacy.html">Privacy Policy</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/legal-consent.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const yearEl = document.getElementById('year');
+            if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+        });
+    </script>
+</body>
+</html>
