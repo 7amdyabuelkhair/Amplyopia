@@ -25,9 +25,12 @@
       if (!url || !anonKey) return null;
       return supabaseGlobal.createClient(url, anonKey, {
         auth: {
+          storage: window.localStorage,
+          storageKey: 'amplyopia-auth-session',
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: true
+          detectSessionInUrl: true,
+          flowType: 'pkce'
         }
       });
     } catch (e) {
@@ -40,8 +43,14 @@
 
   async function getSession() {
     if (!client) return null;
-    const { data } = await client.auth.getSession();
-    return data?.session || null;
+    const { data, error } = await client.auth.getSession();
+    if (error) return null;
+    if (data?.session) return data.session;
+
+    // Fallback: try refreshing silently so users stay signed in across visits.
+    const refreshed = await client.auth.refreshSession();
+    if (refreshed?.error) return null;
+    return refreshed?.data?.session || null;
   }
 
   function onAuthStateChange(cb) {
