@@ -164,6 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hasAcceptedTerms) {
             localStorage.setItem('accepted_terms', 'true');
             if (acceptedAt) localStorage.setItem('accepted_terms_at', String(acceptedAt));
+        } else {
+            localStorage.removeItem('accepted_terms');
+            localStorage.removeItem('accepted_terms_at');
         }
     }
 
@@ -236,7 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 profileComplete = false;
             }
 
-            if (!hasAcceptedTerms) showReconsentModal(true);
+            const isExistingUser = hasName || hasGender || hasBirthdate || !!localStorage.getItem('userName');
+            if (isExistingUser && !hasAcceptedTerms) showReconsentModal(true);
         } catch (e) {
             showProfileUI();
             profileComplete = false;
