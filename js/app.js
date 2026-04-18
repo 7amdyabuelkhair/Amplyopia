@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let authMode = 'signin';
     let pendingTermsAcceptedAt = null;
     let hasAcceptedTerms = false;
+    let termsAcceptedAt = null;
 
     function setAuthMode(mode) {
         authMode = mode === 'signup' ? 'signup' : 'signin';
@@ -161,12 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setTermsState({ accepted, acceptedAt }) {
         hasAcceptedTerms = !!accepted;
+        termsAcceptedAt = acceptedAt || null;
         if (hasAcceptedTerms) {
-            localStorage.setItem('accepted_terms', 'true');
-            if (acceptedAt) localStorage.setItem('accepted_terms_at', String(acceptedAt));
-        } else {
-            localStorage.removeItem('accepted_terms');
-            localStorage.removeItem('accepted_terms_at');
+            return;
         }
     }
 
@@ -197,9 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
 
             const profile = await window.SupabaseApp?.getProfile?.(session.user.id);
+            const termsConsent = await window.SupabaseApp?.getTermsConsent?.(session.user.id);
             setTermsState({
-                accepted: profile?.accepted_terms === true || localStorage.getItem('accepted_terms') === 'true',
-                acceptedAt: profile?.accepted_terms_at || localStorage.getItem('accepted_terms_at')
+                accepted: termsConsent?.accepted_terms === true,
+                acceptedAt: termsConsent?.accepted_at || null
             });
 
             if (profile?.name) profileName.value = profile.name;
@@ -286,8 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
         localStorage.removeItem('userName');
-        localStorage.removeItem('accepted_terms');
-        localStorage.removeItem('accepted_terms_at');
+        hasAcceptedTerms = false;
+        termsAcceptedAt = null;
         document.body.classList.remove('theme-boy', 'theme-girl');
         document.body.classList.add('theme-guest');
         setInstructionImagesByGender();
@@ -338,8 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     signOutBtn?.addEventListener('click', async () => {
         await window.SupabaseApp?.signOut?.();
-        localStorage.removeItem('accepted_terms');
-        localStorage.removeItem('accepted_terms_at');
+        hasAcceptedTerms = false;
+        termsAcceptedAt = null;
         showAuthUI();
     });
 
@@ -363,20 +362,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Birthday is not valid.');
             }
 
-            const acceptedAt = pendingTermsAcceptedAt || localStorage.getItem('accepted_terms_at') || new Date().toISOString();
+            const acceptedAt = pendingTermsAcceptedAt || termsAcceptedAt || new Date().toISOString();
             const saved = await window.SupabaseApp?.upsertProfile?.({
                 id: uid,
                 name,
                 gender,
-                birthdate,
-                acceptedTerms: true,
-                acceptedTermsAt: acceptedAt
+                birthdate
             });
+            await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
             localStorage.setItem('userName', saved.name);
             localStorage.setItem('userGender', saved.gender);
             localStorage.setItem('userBirthdate', saved.birthdate);
             localStorage.setItem('userAge', String(window.Profile?.computeAgeFromBirthdate?.(saved.birthdate) ?? computedAge));
-            setTermsState({ accepted: true, acceptedAt: saved?.accepted_terms_at || acceptedAt });
+            setTermsState({ accepted: true, acceptedAt });
             pendingTermsAcceptedAt = null;
             window.Profile?.applyThemeFromGender?.(saved.gender);
             document.body.classList.remove('theme-guest');
