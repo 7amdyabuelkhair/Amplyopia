@@ -11,7 +11,7 @@
       .legal-consent-banner p{margin:0;font-size:14px;line-height:1.45}
       .legal-consent-banner .btn-accept{border:none;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;background:#ffd65e;color:#1f1f2e}
       .legal-consent-links{margin-left:8px;white-space:nowrap}
-      .legal-consent-links a{color:inherit;font-weight:700;text-decoration:underline}
+      .legal-consent-links a{color:var(--legal-link-color,#5b4acb);font-weight:700;text-decoration:underline}
       .legal-modal{position:fixed;inset:0;background:rgba(20,20,30,.58);display:flex;align-items:center;justify-content:center;z-index:1400;padding:20px}
       .legal-modal-card{width:min(520px,100%);background:#fff;border-radius:16px;padding:20px;border:1px solid #e8e7f3;box-shadow:0 15px 45px rgba(0,0,0,.25);display:grid;gap:10px}
       .legal-modal-card h2{margin:0;color:#202244;font-size:22px}
@@ -19,9 +19,61 @@
       .legal-modal-card label{display:flex;gap:8px;align-items:flex-start}
       .legal-modal-card input[type=checkbox]{margin-top:3px}
       .legal-modal-card .btn-primary{border:none;border-radius:10px;background:#4f46e5;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer}
+      .legal-modal-card a{color:var(--legal-link-color,#5b4acb);font-weight:700}
       .legal-modal-card .error{min-height:18px;color:#cf2836;font-size:13px;font-weight:600}
     `;
     document.head.appendChild(style);
+  }
+
+  /**
+   * Run after other DOMContentLoaded handlers (e.g. app.js) so we do not wipe theme-boy
+   * during async getSession. Prefer Supabase profile gender, then localStorage userGender.
+   */
+  function scheduleApplyLegalThemeByAuthState() {
+    const run = async () => {
+      const body = document.body;
+      if (!body) return;
+
+      const forceThemeClass = (theme) => {
+        body.classList.remove('theme-boy', 'theme-girl', 'theme-guest');
+        body.classList.add(theme);
+      };
+
+      const applyGender = (g) => {
+        const x = String(g || '').trim().toLowerCase();
+        if (x === 'boy' || x === 'girl') {
+          if (window.Profile?.applyThemeFromGender) {
+            window.Profile.applyThemeFromGender(x);
+          } else {
+            forceThemeClass(x === 'boy' ? 'theme-boy' : 'theme-girl');
+          }
+          return true;
+        }
+        return false;
+      };
+
+      let gender = null;
+      try {
+        if (window.SupabaseApp?.getSession) {
+          const session = await window.SupabaseApp.getSession();
+          if (session?.user?.id && window.SupabaseApp?.getProfile) {
+            const profile = await window.SupabaseApp.getProfile(session.user.id);
+            gender = profile?.gender ?? null;
+          }
+        }
+      } catch (_) {
+        // ignore
+      }
+
+      if (!applyGender(gender)) {
+        const stored = localStorage.getItem('userGender');
+        if (!applyGender(stored)) {
+          forceThemeClass('theme-guest');
+        }
+      }
+    };
+
+    setTimeout(run, 0);
   }
 
   function ensureFooterLegalLinks() {
@@ -113,6 +165,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    scheduleApplyLegalThemeByAuthState();
     ensureLegalStyles();
     ensureFooterLegalLinks();
     showCookieBannerIfNeeded();

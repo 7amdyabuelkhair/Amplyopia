@@ -17,6 +17,7 @@
     --tint-2: rgba(255, 220, 220, 0.22);
     --tint-3: rgba(255, 220, 220, 0.15);
     --tint-4: rgba(255, 220, 220, 0.40);
+    --legal-link-color: #c85a9f;
 }
 
 /* Theme overrides (set on <body>) */
@@ -36,6 +37,7 @@ body.theme-guest {
     --tint-2: rgba(255, 213, 79, 0.22);
     --tint-3: rgba(255, 213, 79, 0.15);
     --tint-4: rgba(255, 213, 79, 0.40);
+    --legal-link-color: #d49b00;
 }
 
 body.theme-boy {
@@ -54,6 +56,7 @@ body.theme-boy {
     --tint-2: rgba(185, 220, 255, 0.22);
     --tint-3: rgba(185, 220, 255, 0.15);
     --tint-4: rgba(185, 220, 255, 0.40);
+    --legal-link-color: #2d74d6;
 }
 
 body.theme-girl {
@@ -69,6 +72,7 @@ body.theme-girl {
     --tint-2: rgba(255, 220, 220, 0.22);
     --tint-3: rgba(255, 220, 220, 0.15);
     --tint-4: rgba(255, 220, 220, 0.40);
+    --legal-link-color: #d45ea6;
 }
 
 * {
@@ -331,6 +335,19 @@ body::before {
 
 .site-nav a:hover::before {
     width: 100%;
+}
+
+/* Legal links follow theme (boy=blue, girl=pink, guest=yellow) */
+.site-nav a[href$="terms.html"],
+.site-nav a[href$="privacy.html"] {
+    color: var(--legal-link-color);
+    font-weight: 600;
+}
+
+.site-nav a[href$="terms.html"]:hover,
+.site-nav a[href$="privacy.html"]:hover {
+    color: var(--legal-link-color);
+    filter: brightness(0.95);
 }
 
 /* ============================================
@@ -705,7 +722,7 @@ body::before {
 }
 
 .consent-checkbox a {
-    color: #5b4acb;
+    color: var(--legal-link-color);
     font-weight: 700;
 }
 
@@ -745,7 +762,7 @@ body::before {
 }
 
 .footer-bottom a {
-    color: var(--text-muted);
+    color: var(--legal-link-color);
     text-decoration: none;
     font-weight: 700;
 }
@@ -1183,6 +1200,18 @@ body::before {
 .footer-section ul li a:hover::before {
     opacity: 1;
     left: 0;
+}
+
+.footer-section ul li a[href$="terms.html"],
+.footer-section ul li a[href$="privacy.html"] {
+    color: var(--legal-link-color);
+    font-weight: 700;
+}
+
+.footer-section ul li a[href$="terms.html"]:hover,
+.footer-section ul li a[href$="privacy.html"]:hover {
+    color: var(--legal-link-color);
+    filter: brightness(0.95);
 }
 
 .footer-bottom {
