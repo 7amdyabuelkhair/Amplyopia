@@ -38,6 +38,11 @@
 
   const client = createClient();
 
+  function hasMissingColumnError(error, columnName) {
+    const msg = String(error?.message || '').toLowerCase();
+    return msg.includes('could not find the') && msg.includes(String(columnName || '').toLowerCase());
+  }
+
   async function getSession() {
     if (!client) return null;
     const { data } = await client.auth.getSession();
@@ -90,14 +95,22 @@ async function signInWithGoogle() {
 
   async function getProfile(userId) {
     if (!client) return null;
-    const { data, error } = await client
+    let result = await client
       .from('profiles')
-      // Include age if it exists in older schemas
       .select('id,name,gender,birthdate,age,accepted_terms,accepted_terms_at,updated_at')
       .eq('id', userId)
       .maybeSingle();
-    if (error) throw error;
-    return data || null;
+
+    if (result.error && hasMissingColumnError(result.error, 'accepted_terms')) {
+      result = await client
+        .from('profiles')
+        .select('id,name,gender,birthdate,age,updated_at')
+        .eq('id', userId)
+        .maybeSingle();
+    }
+
+    if (result.error) throw result.error;
+    return result.data || null;
   }
 
   async function upsertProfile({ id, name, gender, birthdate, acceptedTerms, acceptedTermsAt }) {
@@ -115,13 +128,38 @@ async function signInWithGoogle() {
       ...(acceptedTermsAt ? { accepted_terms_at: acceptedTermsAt } : {}),
       updated_at: new Date().toISOString()
     };
-    const { data, error } = await client
+    let result = await client
       .from('profiles')
       .upsert(payload, { onConflict: 'id' })
       .select('id,name,gender,birthdate,age,accepted_terms,accepted_terms_at')
       .single();
-    if (error) throw error;
-    return data;
+
+    if (result.error && hasMissingColumnError(result.error, 'accepted_terms')) {
+      const fallbackPayload = {
+        id,
+        name,
+        gender,
+        birthdate,
+        ...(typeof computedAge === 'number' ? { age: computedAge } : {}),
+        updated_at: new Date().toISOString()
+      };
+      result = await client
+        .from('profiles')
+        .upsert(fallbackPayload, { onConflict: 'id' })
+        .select('id,name,gender,birthdate,age')
+        .single();
+
+      if (!result.error && result.data) {
+        return {
+          ...result.data,
+          ...(typeof acceptedTerms === 'boolean' ? { accepted_terms: acceptedTerms } : {}),
+          ...(acceptedTermsAt ? { accepted_terms_at: acceptedTermsAt } : {})
+        };
+      }
+    }
+
+    if (result.error) throw result.error;
+    return result.data;
   }
 
   async function saveTermsConsent({ userId, acceptedAt }) {
@@ -142,6 +180,14 @@ async function signInWithGoogle() {
       .select('id,accepted_terms,accepted_terms_at')
       .maybeSingle();
 
+    if (result.error && hasMissingColumnError(result.error, 'accepted_terms')) {
+      return {
+        id: userId,
+        accepted_terms: true,
+        accepted_terms_at: timestamp
+      };
+    }
+
     if (!result.error && result.data) return result.data;
 
     const upsertPayload = {
@@ -154,6 +200,14 @@ async function signInWithGoogle() {
       .upsert(upsertPayload, { onConflict: 'id' })
       .select('id,accepted_terms,accepted_terms_at')
       .single();
+
+    if (result.error && hasMissingColumnError(result.error, 'accepted_terms')) {
+      return {
+        id: userId,
+        accepted_terms: true,
+        accepted_terms_at: timestamp
+      };
+    }
 
     if (result.error) throw result.error;
     return result.data;
