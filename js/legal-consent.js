@@ -65,7 +65,16 @@
       if (!uid) return;
 
       const profile = await window.SupabaseApp?.getProfile?.(uid);
-      if (profile?.accepted_terms === true) return;
+      const acceptedByStorage = localStorage.getItem('accepted_terms') === 'true';
+      const acceptedByProfile = profile?.accepted_terms === true;
+      if (acceptedByStorage || acceptedByProfile) return;
+
+      const hasExistingProfileData = !!(
+        (profile?.name && String(profile.name).trim()) ||
+        (profile?.gender && String(profile.gender).trim()) ||
+        (profile?.birthdate && String(profile.birthdate).trim())
+      );
+      if (!hasExistingProfileData) return;
 
       const modal = document.createElement('div');
       modal.className = 'legal-modal';
