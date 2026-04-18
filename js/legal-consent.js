@@ -65,9 +65,8 @@
       if (!uid) return;
 
       const profile = await window.SupabaseApp?.getProfile?.(uid);
-      const acceptedByStorage = localStorage.getItem('accepted_terms') === 'true';
-      const acceptedByProfile = profile?.accepted_terms === true;
-      if (acceptedByStorage || acceptedByProfile) return;
+      const consent = await window.SupabaseApp?.getTermsConsent?.(uid);
+      if (consent?.accepted_terms === true) return;
 
       const hasExistingProfileData = !!(
         (profile?.name && String(profile.name).trim()) ||
@@ -101,8 +100,6 @@
         try {
           const acceptedAt = new Date().toISOString();
           await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
-          localStorage.setItem('accepted_terms', 'true');
-          localStorage.setItem('accepted_terms_at', acceptedAt);
           modal.remove();
         } catch (error) {
           if (errEl) errEl.textContent = error?.message || 'Could not save your agreement.';
