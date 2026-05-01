@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Privacy Policy | Amplyopia</title>
+    <meta name="description" content="Privacy Policy for Amplyopia covering data collection, usage, protection, and user rights.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="logo" href="index.html"><span class="logo-text">amplyopia</span></a>
+            <nav class="site-nav" aria-label="Primary">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="terms.html">Terms &amp; Conditions</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="section">
+        <div class="container">
+            <h1>Privacy Policy</h1>
+            <p class="landing-note">Effective date: April 18, 2026</p>
+
+            <div class="auth-card">
+                <div class="auth-body">
+                    <h3>1) Data We Collect</h3>
+                    <p>We collect the minimum data needed to provide the Amplyopia service, including your email address, age (or date of birth for age calculation), and in-game scores/performance data.</p>
+
+                    <h3>2) How We Use Data</h3>
+                    <p>We use collected data to operate and improve the platform, track game progress and score history, personalize user experience, and support reports that help users and caregivers follow improvement over time.</p>
+
+                    <h3>3) Data Protection</h3>
+                    <p>We apply reasonable technical and organizational safeguards to protect personal data against unauthorized access, alteration, disclosure, or loss. No system is 100% secure, but we continuously improve protection controls.</p>
+
+                    <h3>4) No Sale of Personal Data</h3>
+                    <p>We do not sell, rent, or trade your personal data to third parties.</p>
+
+                    <h3>5) User Rights</h3>
+                    <p>You may request access to your stored data and request deletion of your data/account, subject to legal or operational requirements. To make a request, contact our support channel.</p>
+
+                    <h3>6) Children's Privacy</h3>
+                    <p>Amplyopia is designed for child vision training with adult supervision. If a child is below the age required by local law, parental or guardian consent is required before account creation and use.</p>
+
+                    <h3>7) Data Retention</h3>
+                    <p>We keep data only as long as needed for service delivery, legal obligations, and safety. If you request deletion, we will remove or anonymize data where applicable.</p>
+
+                    <h3>8) Policy Updates</h3>
+                    <p>We may revise this Privacy Policy over time. Material changes may require users to re-accept updated policy terms.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Amplyopia. All rights reserved.</p>
+                <p><a href="terms.html">Terms &amp; Conditions</a> | <a href="privacy.html">Privacy Policy</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/legal-consent.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const yearEl = document.getElementById('year');
+            if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+        });
+    </script>
+</body>
+</html>
