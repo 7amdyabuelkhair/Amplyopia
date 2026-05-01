@@ -178,17 +178,41 @@ function flappyBirdLevel6Game(callback) {
                 id="flappy-frame"
                 src="../flappy-bird-master/index.html"
                 title="Flappy Bird"
+                tabindex="0"
                 style="width:370px;height:650px;border:2px solid #ddd;border-radius:12px;background:#000;"
             ></iframe>
         </div>
+        <button id="flappy-start-btn" class="small-btn">Start Flappy Bird</button>
         <button id="flappy-finish-btn" class="small-btn">Finish Flappy Bird</button>
     `;
 
     hide(levelGames, gameResult, giftScreen, finalScreen);
     show(gameArea);
 
+    const startBtn = document.getElementById('flappy-start-btn');
     const finishBtn = document.getElementById('flappy-finish-btn');
     const flappyFrame = document.getElementById('flappy-frame');
+
+    // Ensure the iframe receives keyboard events immediately.
+    const focusFlappyFrame = () => {
+        try { flappyFrame?.focus(); } catch (_) {}
+        try { flappyFrame?.contentWindow?.focus?.(); } catch (_) {}
+    };
+    if (flappyFrame) {
+        flappyFrame.onload = () => setTimeout(focusFlappyFrame, 50);
+        flappyFrame.addEventListener('click', focusFlappyFrame);
+        flappyFrame.addEventListener('mouseenter', focusFlappyFrame);
+    }
+    setTimeout(focusFlappyFrame, 50);
+
+    if (startBtn) {
+        startBtn.onclick = () => {
+            focusFlappyFrame();
+            try { flappyFrame?.contentWindow?.startFlappyBird?.(); } catch (_) {}
+            startBtn.disabled = true;
+            startBtn.textContent = 'Started';
+        };
+    }
 
     finishBtn.onclick = () => {
         let score = 0;
