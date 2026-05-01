@@ -175,7 +175,7 @@ function update() {
     }
 
     //score
-    context.fillStyle = "white";
+    context.fillStyle = "black";
     context.font="45px sans-serif";
     context.fillText(score, 5, 45);
     if (!started && !gameOver) {
