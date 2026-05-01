@@ -172,7 +172,8 @@ function showGameResult(score, encouragement, callback) {
 function flappyBirdLevel6Game(callback) {
     gameArea.innerHTML = `
         <h2>Flappy Bird</h2>
-        <p style="margin-top:-4px;">Press <b>Space</b> or <b>Arrow Up</b> to jump. When you are done, press finish.</p>
+        <p style="margin-top:-4px;">Press <b>Space</b> or <b>Arrow Up</b> to jump. Survive 1 minute to get <b>100 points</b>.</p>
+        <div id="flappy-timer" style="font-size:1.1rem;font-weight:700;margin:6px 0 8px;">Time left: 60s</div>
         <div style="display:flex;justify-content:center;margin:10px 0 14px;">
             <iframe
                 id="flappy-frame"
@@ -192,6 +193,10 @@ function flappyBirdLevel6Game(callback) {
     const startBtn = document.getElementById('flappy-start-btn');
     const finishBtn = document.getElementById('flappy-finish-btn');
     const flappyFrame = document.getElementById('flappy-frame');
+    const timerEl = document.getElementById('flappy-timer');
+    let timeLeft = 60;
+    let timerId = null;
+    let sessionFinished = false;
 
     // Ensure the iframe receives keyboard events immediately.
     const focusFlappyFrame = () => {
@@ -207,22 +212,46 @@ function flappyBirdLevel6Game(callback) {
 
     if (startBtn) {
         startBtn.onclick = () => {
+            if (sessionFinished) return;
             focusFlappyFrame();
             try { flappyFrame?.contentWindow?.startFlappyBird?.(); } catch (_) {}
             startBtn.disabled = true;
             startBtn.textContent = 'Started';
+            if (!timerId) {
+                timerId = setInterval(() => {
+                    timeLeft -= 1;
+                    if (timerEl) timerEl.textContent = `Time left: ${Math.max(0, timeLeft)}s`;
+                    if (timeLeft <= 0) {
+                        clearInterval(timerId);
+                        timerId = null;
+                        if (!sessionFinished) {
+                            sessionFinished = true;
+                            showGameResult(100, 'Amazing! You completed 1 minute and earned 100 points!', callback);
+                        }
+                    }
+                }, 1000);
+            }
         };
     }
 
     finishBtn.onclick = () => {
+        if (sessionFinished) return;
+        sessionFinished = true;
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
         let score = 0;
         let message = 'Great effort!';
         try {
             const frameWin = flappyFrame?.contentWindow;
-            const rawScore = frameWin?.getFlappyBirdScore?.();
+            const reportScore = frameWin?.getFlappyBirdReportScore?.();
+            const rawScore = Number.isFinite(reportScore) ? reportScore : frameWin?.getFlappyBirdScore?.();
             score = Number.isFinite(rawScore) ? Math.max(0, Math.round(rawScore)) : 0;
-            const isGameOver = !!frameWin?.isFlappyBirdGameOver?.();
-            message = isGameOver ? 'Great try! Keep practicing.' : 'Nice flying!';
+            const started = !!frameWin?.hasFlappyBirdStarted?.();
+            if (!started) {
+                message = 'Please press Start Flappy Bird first.';
+            }
         } catch (_) {
             score = 0;
         }

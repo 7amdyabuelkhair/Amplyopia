@@ -39,18 +39,28 @@ let gravity = 0.4;
 
 let gameOver = false;
 let score = 0;
+let bestScore = 0;
 let started = false;
 
 window.getFlappyBirdScore = function() {
     return score;
 };
 
+window.getFlappyBirdReportScore = function() {
+    return Math.max(score, bestScore);
+};
+
 window.isFlappyBirdGameOver = function() {
     return gameOver;
 };
 
+window.hasFlappyBirdStarted = function() {
+    return started;
+};
+
 window.startFlappyBird = function() {
     if (gameOver) {
+        bestScore = Math.max(bestScore, score);
         bird.y = birdY;
         pipeArray = [];
         score = 0;
@@ -145,6 +155,7 @@ function update() {
         // Count one point per pipe pair (bottom pipe only).
         if (!pipe.passed && !pipe.isTop && bird.x > pipe.x + pipe.width) {
             score += 1;
+            bestScore = Math.max(bestScore, score);
             pipe.passed = true;
         }
 
@@ -217,6 +228,7 @@ function moveBird(e) {
 
         //reset game
         if (gameOver) {
+            bestScore = Math.max(bestScore, score);
             bird.y = birdY;
             pipeArray = [];
             score = 0;
