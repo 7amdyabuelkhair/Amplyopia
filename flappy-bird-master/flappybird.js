@@ -68,6 +68,9 @@ window.startFlappyBird = function() {
     }
     started = true;
     velocityY = -6;
+    try {
+        window.parent?.postMessage?.({ type: "flappy:start" }, "*");
+    } catch (_) {}
 };
 
 window.onload = function() {
@@ -112,6 +115,8 @@ window.onload = function() {
     requestAnimationFrame(update);
     setInterval(placePipes, 1500); //every 1.5 seconds
     document.addEventListener("keydown", moveBird);
+    board.addEventListener("pointerdown", jumpBird);
+    board.addEventListener("touchstart", jumpBird, { passive: true });
 }
 
 function update() {
@@ -221,19 +226,26 @@ function placePipes() {
 }
 
 function moveBird(e) {
-    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyX") {
-        started = true;
-        //jump
-        velocityY = -6;
+    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "ArrowRight" || e.code == "KeyX") {
+        jumpBird();
+    }
+}
 
-        //reset game
-        if (gameOver) {
-            bestScore = Math.max(bestScore, score);
-            bird.y = birdY;
-            pipeArray = [];
-            score = 0;
-            gameOver = false;
-        }
+function jumpBird() {
+    started = true;
+    try {
+        window.parent?.postMessage?.({ type: "flappy:start" }, "*");
+    } catch (_) {}
+    //jump
+    velocityY = -6;
+
+    //reset game
+    if (gameOver) {
+        bestScore = Math.max(bestScore, score);
+        bird.y = birdY;
+        pipeArray = [];
+        score = 0;
+        gameOver = false;
     }
 }
 

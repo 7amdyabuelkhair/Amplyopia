@@ -194,9 +194,63 @@ function flappyBirdLevel6Game(callback) {
     const finishBtn = document.getElementById('flappy-finish-btn');
     const flappyFrame = document.getElementById('flappy-frame');
     const timerEl = document.getElementById('flappy-timer');
-    let timeLeft = 60;
-    let timerId = null;
+    const timerDurationSec = 60;
+    let timeLeft = timerDurationSec;
+    let startTimeMs = 0;
+    let timerFrameId = null;
     let sessionFinished = false;
+
+    const getElapsedSeconds = () => {
+        if (!startTimeMs) return 0;
+        return Math.max(0, Math.floor((Date.now() - startTimeMs) / 1000));
+    };
+
+    const syncTimer = () => {
+        const elapsed = getElapsedSeconds();
+        timeLeft = Math.max(0, timerDurationSec - elapsed);
+        if (timerEl) timerEl.textContent = `Time left: ${timeLeft}s`;
+        if (elapsed >= timerDurationSec && !sessionFinished) {
+            sessionFinished = true;
+            if (timerFrameId) cancelAnimationFrame(timerFrameId);
+            timerFrameId = null;
+            showGameResult(100, 'Amazing! You completed 1 minute and earned 100 points!', callback);
+            return true;
+        }
+        return false;
+    };
+
+    const runTimer = () => {
+        if (sessionFinished || !startTimeMs) return;
+        const finished = syncTimer();
+        if (!finished) {
+            timerFrameId = requestAnimationFrame(runTimer);
+        }
+    };
+
+    const activateStart = () => {
+        if (!startBtn || startBtn.disabled || sessionFinished) return;
+        focusFlappyFrame();
+        try { flappyFrame?.contentWindow?.startFlappyBird?.(); } catch (_) {}
+        startBtn.disabled = true;
+        startBtn.textContent = 'Started';
+        if (!timerFrameId) {
+            startTimeMs = Date.now();
+            syncTimer();
+            timerFrameId = requestAnimationFrame(runTimer);
+        }
+    };
+
+    const onStartKey = (e) => {
+        if (sessionFinished) return;
+        if (e.code === 'Space' || e.code === 'ArrowUp') activateStart();
+    };
+
+    const onFlappyMessage = (e) => {
+        if (e?.data?.type === 'flappy:start') activateStart();
+    };
+
+    window.addEventListener('keydown', onStartKey);
+    window.addEventListener('message', onFlappyMessage);
 
     // Ensure the iframe receives keyboard events immediately.
     const focusFlappyFrame = () => {
@@ -211,36 +265,16 @@ function flappyBirdLevel6Game(callback) {
     setTimeout(focusFlappyFrame, 50);
 
     if (startBtn) {
-        startBtn.onclick = () => {
-            if (sessionFinished) return;
-            focusFlappyFrame();
-            try { flappyFrame?.contentWindow?.startFlappyBird?.(); } catch (_) {}
-            startBtn.disabled = true;
-            startBtn.textContent = 'Started';
-            if (!timerId) {
-                timerId = setInterval(() => {
-                    timeLeft -= 1;
-                    if (timerEl) timerEl.textContent = `Time left: ${Math.max(0, timeLeft)}s`;
-                    if (timeLeft <= 0) {
-                        clearInterval(timerId);
-                        timerId = null;
-                        if (!sessionFinished) {
-                            sessionFinished = true;
-                            showGameResult(100, 'Amazing! You completed 1 minute and earned 100 points!', callback);
-                        }
-                    }
-                }, 1000);
-            }
-        };
+        startBtn.onclick = () => activateStart();
     }
 
     finishBtn.onclick = () => {
         if (sessionFinished) return;
         sessionFinished = true;
-        if (timerId) {
-            clearInterval(timerId);
-            timerId = null;
-        }
+        window.removeEventListener('keydown', onStartKey);
+        window.removeEventListener('message', onFlappyMessage);
+        if (timerFrameId) cancelAnimationFrame(timerFrameId);
+        timerFrameId = null;
         let score = 0;
         let message = 'Great effort!';
         try {
@@ -251,6 +285,15 @@ function flappyBirdLevel6Game(callback) {
             const started = !!frameWin?.hasFlappyBirdStarted?.();
             if (!started) {
                 message = 'Please press Start Flappy Bird first.';
+            } else {
+                // Convert survival time to points so real play is reflected in report.
+                const elapsedSeconds = getElapsedSeconds();
+                const timeBasedScore = Math.min(100, Math.ceil((elapsedSeconds / timerDurationSec) * 100));
+                score = Math.max(score, timeBasedScore);
+                if (score >= 100) {
+                    score = 100;
+                    message = 'Amazing! You completed 1 minute and earned 100 points!';
+                }
             }
         } catch (_) {
             score = 0;
