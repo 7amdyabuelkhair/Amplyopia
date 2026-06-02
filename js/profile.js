@@ -11,10 +11,15 @@
   }
 
   function applyThemeFromGender(gender) {
+    if (window.Branding?.applyFromGender) {
+      window.Branding.applyFromGender(gender);
+      return;
+    }
     const g = String(gender || '').toLowerCase();
-    document.body.classList.remove('theme-boy', 'theme-girl');
+    document.body.classList.remove('theme-boy', 'theme-girl', 'theme-guest');
     if (g === 'boy') document.body.classList.add('theme-boy');
-    if (g === 'girl') document.body.classList.add('theme-girl');
+    else if (g === 'girl') document.body.classList.add('theme-girl');
+    else document.body.classList.add('theme-guest');
   }
 
   window.Profile = {

@@ -33,15 +33,15 @@
     <meta property="twitter:description" content="Free online vision test and lazy eye treatment. Amplyopia and amblyopia therapy, vision rehabilitation. علاج العين الكسولة، علاج الغمش">
     <meta property="twitter:image" content="https://amplyopia.com/og-image.jpg">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffdcdc">
+    <!-- Favicon & PWA (themed by js/branding.js: blue=boy, pink=girl, yellow=guest) -->
+    <link rel="icon" id="app-favicon-ico" href="/images/logo/yellow-favicon.ico" sizes="any">
+    <link rel="icon" id="app-favicon-svg" type="image/svg+xml" href="/images/logo/yellow-favicon.svg">
+    <link rel="icon" id="app-favicon-png" type="image/png" sizes="96x96" href="/images/logo/yellow-favicon-96x96.png">
+    <link rel="apple-touch-icon" id="app-apple-touch" href="/images/logo/yellow-apple-touch-icon.png">
+    <link rel="manifest" id="app-manifest" href="/manifest-guest.json">
+    <meta name="theme-color" id="app-theme-color" content="#ffe066">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="apple-touch-icon" href="/images/boy.png">
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/styles.css">
@@ -372,6 +372,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js" defer></script>
     <script src="js/supabase.js" defer></script>
+    <script src="js/branding.js" defer></script>
     <script src="js/profile.js" defer></script>
     <script src="js/score.js" defer></script>
     <script src="js/pwa-config.js" defer></script>

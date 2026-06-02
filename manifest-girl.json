@@ -6,17 +6,17 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#fff9d6",
-  "theme_color": "#ffe066",
+  "background_color": "#fbfaef",
+  "theme_color": "#ffc4c4",
   "icons": [
     {
-      "src": "/images/logo/yellow-web-app-manifest-192x192.png",
+      "src": "/images/logo/pink-web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/logo/yellow-web-app-manifest-512x512.png",
+      "src": "/images/logo/pink-web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

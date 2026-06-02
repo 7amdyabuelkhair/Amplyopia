@@ -25,54 +25,15 @@
     document.head.appendChild(style);
   }
 
-  /**
-   * Run after other DOMContentLoaded handlers (e.g. app.js) so we do not wipe theme-boy
-   * during async getSession. Prefer Supabase profile gender, then localStorage userGender.
-   */
   function scheduleApplyLegalThemeByAuthState() {
     const run = async () => {
-      const body = document.body;
-      if (!body) return;
-
-      const forceThemeClass = (theme) => {
-        body.classList.remove('theme-boy', 'theme-girl', 'theme-guest');
-        body.classList.add(theme);
-      };
-
-      const applyGender = (g) => {
-        const x = String(g || '').trim().toLowerCase();
-        if (x === 'boy' || x === 'girl') {
-          if (window.Profile?.applyThemeFromGender) {
-            window.Profile.applyThemeFromGender(x);
-          } else {
-            forceThemeClass(x === 'boy' ? 'theme-boy' : 'theme-girl');
-          }
-          return true;
-        }
-        return false;
-      };
-
-      let gender = null;
-      try {
-        if (window.SupabaseApp?.getSession) {
-          const session = await window.SupabaseApp.getSession();
-          if (session?.user?.id && window.SupabaseApp?.getProfile) {
-            const profile = await window.SupabaseApp.getProfile(session.user.id);
-            gender = profile?.gender ?? null;
-          }
-        }
-      } catch (_) {
-        // ignore
+      if (window.Branding?.applyFromAuthState) {
+        await window.Branding.applyFromAuthState();
+        return;
       }
-
-      if (!applyGender(gender)) {
-        const stored = localStorage.getItem('userGender');
-        if (!applyGender(stored)) {
-          forceThemeClass('theme-guest');
-        }
-      }
+      const stored = localStorage.getItem('userGender');
+      window.Profile?.applyThemeFromGender?.(stored);
     };
-
     setTimeout(run, 0);
   }
 

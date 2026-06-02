@@ -1,11 +1,8 @@
-// PWA + push configuration (safe to edit)
 window.PWA_CONFIG = {
   VERSION_URL: '/version.json',
   SESSION_DURATION_MS: 40 * 60 * 1000,
-  NOTIFICATION_ICON: '/images/boy.png',
-  APP_LOGO: '/images/boy.png',
-  // Web Push VAPID public key (generate with web-push / Supabase docs)
-  VAPID_PUBLIC_KEY: '',
-  // Emails allowed to open admin dashboard (also set is_admin in Supabase profiles)
-  ADMIN_EMAILS: []
+  NOTIFICATION_ICON: '/images/logo/yellow-favicon-96x96.png',
+  APP_LOGO: '/images/logo/yellow-favicon-96x96.png',
+  VAPID_PUBLIC_KEY: 'BAtZtJW0PF66EymnSG1td4HyMoZw7Dn_2OIJfifwhJZvZWAAt3aIL-ghI4I22ENHzrDhlf2DFd7fEsTwBpCUnEQ',
+  ADMIN_EMAILS: ['hamdyabuelkhair@gmail.com']
 };

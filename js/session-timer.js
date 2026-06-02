@@ -26,7 +26,11 @@
   }
 
   function showLocalNotification(title, body) {
-    const icon = cfg().NOTIFICATION_ICON || cfg().APP_LOGO || '/images/boy.png';
+    const icon =
+      window.Branding?.getAssets?.(localStorage.getItem('userGender'))?.logoImg ||
+      cfg().NOTIFICATION_ICON ||
+      cfg().APP_LOGO ||
+      '/images/logo/yellow-favicon-96x96.png';
     if (Notification.permission === 'granted') {
       if (navigator.serviceWorker?.ready) {
         navigator.serviceWorker.ready.then((reg) =>

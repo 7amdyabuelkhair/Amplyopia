@@ -1,6 +1,9 @@
 (() => {
   const cfg = () => window.PWA_CONFIG || {};
-  const icon = () => cfg().NOTIFICATION_ICON || '/images/boy.png';
+  const icon = () =>
+    window.Branding?.getAssets?.(localStorage.getItem('userGender'))?.logoImg ||
+    cfg().NOTIFICATION_ICON ||
+    '/images/logo/yellow-favicon-96x96.png';
 
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);

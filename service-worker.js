@@ -1,20 +1,31 @@
 /* Amplyopia PWA service worker */
-const CACHE_NAME = 'amplyopia-pwa-v1.0.0';
+const CACHE_NAME = 'amplyopia-pwa-v1.1.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/dashboard.html',
   '/manifest.json',
+  '/manifest-boy.json',
+  '/manifest-girl.json',
+  '/manifest-guest.json',
   '/css/styles.css',
   '/css/pwa.css',
+  '/js/branding.js',
   '/js/pwa-config.js',
   '/js/pwa-bootstrap.js',
   '/js/session-timer.js',
   '/js/push-client.js',
   '/js/supabase.js',
   '/js/profile.js',
-  '/images/boy.png',
-  '/images/girl.png'
+  '/images/logo/blue-favicon.ico',
+  '/images/logo/pink-favicon.ico',
+  '/images/logo/yellow-favicon.ico',
+  '/images/logo/blue-web-app-manifest-192x192.png',
+  '/images/logo/pink-web-app-manifest-192x192.png',
+  '/images/logo/yellow-web-app-manifest-192x192.png',
+  '/images/logo/blue-web-app-manifest-512x512.png',
+  '/images/logo/pink-web-app-manifest-512x512.png',
+  '/images/logo/yellow-web-app-manifest-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -72,8 +83,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title || 'Amplyopia', {
       body: payload.body || '',
-      icon: payload.icon || '/images/boy.png',
-      badge: '/images/boy.png',
+      icon: payload.icon || '/images/logo/yellow-favicon-96x96.png',
+      badge: '/images/logo/yellow-favicon-96x96.png',
       data: payload.data || {},
       tag: payload.tag || 'amplyopia-push'
     })

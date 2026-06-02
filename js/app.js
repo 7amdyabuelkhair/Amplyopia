@@ -287,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('userName');
         hasAcceptedTerms = false;
         termsAcceptedAt = null;
+        window.Branding?.applyFromGender?.(null);
         document.body.classList.remove('theme-boy', 'theme-girl');
         document.body.classList.add('theme-guest');
         setInstructionImagesByGender();
@@ -337,8 +338,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     signOutBtn?.addEventListener('click', async () => {
         await window.SupabaseApp?.signOut?.();
+        localStorage.removeItem('userGender');
         hasAcceptedTerms = false;
         termsAcceptedAt = null;
+        window.Branding?.applyFromGender?.(null);
         showAuthUI();
     });
 
