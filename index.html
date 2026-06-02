@@ -35,9 +35,17 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffdcdc">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="/images/boy.png">
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/pwa.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -327,7 +335,7 @@
                     <ul>
                         <li><a href="dashboard.html">Dashboard</a></li>
                         <li><a href="vision-test.html">Vision Test</a></li>
-                        <li><a href="lazytest/index.html?v=20260501-2">Lazy Eye</a></li>
+                        <li><a href="lazytest/index.html">Lazy Eye</a></li>
                         <li><a href="guidelines.html">Guidelines</a></li>
                         <li><a href="report.html">Report</a></li>
                     </ul>
@@ -366,6 +374,10 @@
     <script src="js/supabase.js" defer></script>
     <script src="js/profile.js" defer></script>
     <script src="js/score.js" defer></script>
+    <script src="js/pwa-config.js" defer></script>
+    <script src="js/session-timer.js" defer></script>
+    <script src="js/push-client.js" defer></script>
+    <script src="js/pwa-bootstrap.js" defer></script>
     <script src="js/legal-consent.js" defer></script>
     <script src="js/app.js" defer></script>
     

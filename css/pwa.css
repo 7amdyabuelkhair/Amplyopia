@@ -1,0 +1,127 @@
+/* PWA UI: session timer, install banner, update modal */
+.pwa-session-timer {
+  position: fixed;
+  right: 16px;
+  bottom: 88px;
+  z-index: 1250;
+  min-width: 220px;
+  border-radius: 22px;
+  padding: 14px 16px;
+  border: 2px solid var(--border-color, rgba(255, 220, 220, 0.5));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.9));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+  animation: pwaTimerPop 0.35s ease;
+}
+
+.pwa-session-timer.theme-boy {
+  border-color: #b9dcff;
+  background: linear-gradient(135deg, #f4f9ff, #eaf4ff);
+}
+
+.pwa-session-timer.theme-girl {
+  border-color: #ffc4c4;
+  background: linear-gradient(135deg, #fff5f8, #ffeef3);
+}
+
+.pwa-session-timer.theme-guest {
+  border-color: #ffe066;
+  background: linear-gradient(135deg, #fff9d6, #fff2a6);
+}
+
+.pwa-session-timer__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-dark, #2d3436);
+  margin-bottom: 6px;
+}
+
+.pwa-session-timer__time {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--text-dark, #2d3436);
+}
+
+.pwa-session-timer__bar {
+  margin-top: 10px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.pwa-session-timer__bar > span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6ea8ff, #2d74d6);
+  transition: width 0.35s ease;
+}
+
+.pwa-session-timer.theme-girl .pwa-session-timer__bar > span {
+  background: linear-gradient(90deg, #ff9ec8, #d45ea6);
+}
+
+.pwa-session-timer.theme-guest .pwa-session-timer__bar > span {
+  background: linear-gradient(90deg, #ffe066, #d49b00);
+}
+
+.pwa-install-banner,
+.pwa-update-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1300;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #161a2be6;
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.pwa-install-banner p,
+.pwa-update-banner p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pwa-install-banner button,
+.pwa-update-banner button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pwa-install-banner .btn-install,
+.pwa-update-banner .btn-update {
+  background: #ffd65e;
+  color: #1f1f2e;
+}
+
+.pwa-install-banner .btn-dismiss,
+.pwa-update-banner .btn-later {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+@keyframes pwaTimerPop {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 768px) {
+  .pwa-session-timer {
+    left: 16px;
+    right: 16px;
+    bottom: 96px;
+  }
+}

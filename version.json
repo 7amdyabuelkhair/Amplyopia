@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "build": 2026041901,
+  "releasedAt": "2026-04-19T00:00:00.000Z",
+  "notes": "PWA support, session timer, push notifications, and admin dashboard."
+}

@@ -204,6 +204,109 @@ async function signInWithGoogle() {
     return data || [];
   }
 
+  async function isAdminUser() {
+    const session = await getSession();
+    const userId = session?.user?.id;
+    const email = String(session?.user?.email || '').toLowerCase();
+    if (!userId) return false;
+
+    const adminEmails = (window.PWA_CONFIG?.ADMIN_EMAILS || []).map((x) => String(x).toLowerCase());
+    if (email && adminEmails.includes(email)) return true;
+
+    const { data, error } = await client
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) return false;
+    return data?.is_admin === true;
+  }
+
+  async function listAllProfilesForAdmin() {
+    if (!client) throw new Error('Supabase is not configured.');
+    const ok = await isAdminUser();
+    if (!ok) throw new Error('Admin access required.');
+
+    const { data, error } = await client
+      .from('profiles')
+      .select('id,name,gender,birthdate,created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function savePushSubscription({ userId, endpoint, p256dh, auth }) {
+    if (!client) throw new Error('Supabase is not configured.');
+    const payload = {
+      user_id: userId,
+      endpoint,
+      p256dh,
+      auth_key: auth,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await client
+      .from('push_subscriptions')
+      .upsert(payload, { onConflict: 'endpoint' });
+    if (error) throw error;
+    return { ok: true };
+  }
+
+  async function listPendingNotifications(userId) {
+    if (!client) return [];
+    const { data, error } = await client
+      .from('notification_targets')
+      .select('id,notification_id,title,body,icon,url,delivered_at')
+      .eq('user_id', userId)
+      .is('delivered_at', null)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function markNotificationDelivered(targetId, userId) {
+    if (!client) return;
+    await client
+      .from('notification_targets')
+      .update({ delivered_at: new Date().toISOString() })
+      .eq('id', targetId)
+      .eq('user_id', userId);
+  }
+
+  async function createAdminNotification({ title, body, icon, url, userIds }) {
+    if (!client) throw new Error('Supabase is not configured.');
+    const ok = await isAdminUser();
+    if (!ok) throw new Error('Admin access required.');
+
+    const session = await getSession();
+    const createdBy = session?.user?.id;
+    const { data: msg, error: msgErr } = await client
+      .from('notification_messages')
+      .insert({
+        title,
+        body,
+        icon: icon || null,
+        url: url || '/index.html',
+        created_by: createdBy
+      })
+      .select('id')
+      .single();
+    if (msgErr) throw msgErr;
+
+    const targets = (userIds || []).map((uid) => ({
+      notification_id: msg.id,
+      user_id: uid,
+      title,
+      body,
+      icon: icon || null,
+      url: url || '/index.html'
+    }));
+    if (!targets.length) throw new Error('Select at least one user.');
+
+    const { error: targetErr } = await client.from('notification_targets').insert(targets);
+    if (targetErr) throw targetErr;
+    return { ok: true, notificationId: msg.id, sentCount: targets.length };
+  }
+
   window.SupabaseApp = {
     client,
     configured: !!client,
@@ -220,7 +323,13 @@ async function signInWithGoogle() {
     saveTermsConsent,
     addScoreEvent,
     getTotalScore,
-    listScores
+    listScores,
+    isAdminUser,
+    listAllProfilesForAdmin,
+    savePushSubscription,
+    listPendingNotifications,
+    markNotificationDelivered,
+    createAdminNotification
   };
 })();
 

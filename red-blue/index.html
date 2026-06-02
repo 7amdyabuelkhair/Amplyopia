@@ -79,6 +79,9 @@
         .status { text-align: center; color: var(--muted); min-height: 22px; }
         .hint { color: var(--muted); font-size: 14px; text-align: center; margin-bottom: 10px; }
     </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffdcdc">
+    <link rel="stylesheet" href="../css/pwa.css">
 </head>
 <body>
     <div class="wrap">
@@ -125,6 +128,10 @@
     <script src="../js/profile.js"></script>
     <script src="../js/score.js"></script>
     <script src="../js/legal-consent.js"></script>
+    <script src="../js/pwa-config.js" defer></script>
+    <script src="../js/session-timer.js" defer></script>
+    <script src="../js/push-client.js" defer></script>
+    <script src="../js/pwa-bootstrap.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const yearEl = document.getElementById('year');

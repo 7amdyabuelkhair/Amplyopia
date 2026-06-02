@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffdcdc">
+    <link rel="stylesheet" href="css/pwa.css">
     <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -82,6 +85,13 @@
         };
     </script>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js" defer></script>
+    <script src="js/supabase.js" defer></script>
+    <script src="js/pwa-config.js" defer></script>
+    <script src="js/session-timer.js" defer></script>
+    <script src="js/push-client.js" defer></script>
+    <script src="js/pwa-bootstrap.js" defer></script>
     <script src="js/app.js" defer></script>
     <script src="js/legal-consent.js" defer></script>
     <script src="js/db.js" defer></script>
