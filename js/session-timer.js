@@ -137,6 +137,24 @@
     if (!tickTimer) tickTimer = setInterval(tick, 1000);
   }
 
+  /** Start timer when entering Lazy Eye; keep running across the app if already started. */
+  function startLazyEyeSession() {
+    if (getRemainingMs() > 0) {
+      init();
+      return;
+    }
+    startSession();
+  }
+
+  function stopSession() {
+    localStorage.removeItem(STORAGE_KEY);
+    hideWidget();
+    if (tickTimer) {
+      clearInterval(tickTimer);
+      tickTimer = null;
+    }
+  }
+
   function init() {
     const remaining = getRemainingMs();
     if (!remaining) {
@@ -154,6 +172,8 @@
 
   window.SessionTimer = {
     startSession,
+    startLazyEyeSession,
+    stopSession,
     getRemainingMs,
     isActive: () => getRemainingMs() > 0,
     init

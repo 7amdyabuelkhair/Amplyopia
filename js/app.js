@@ -188,11 +188,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (progressIndicator) progressIndicator.classList.remove('hidden');
     }
 
+    function shouldStayOnHomeForProfile() {
+        return isEditProfileMode();
+    }
+
     async function hydrateProfileFromSupabase(session) {
         try {
             if (!session?.user?.id) {
                 showAuthUI();
                 applyThemeFromStoredGender();
+                return;
+            }
+
+            if (!shouldStayOnHomeForProfile()) {
+                window.AuthRoutes?.goToDashboard?.();
                 return;
             }
 
@@ -281,6 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('signin') === '1') {
+            goToSignInStep();
+        }
         if (urlParams.get('code') || urlParams.get('error')) {
             goToSignInStep();
         }
@@ -319,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navSignoutBtn?.addEventListener('click', async () => {
         await window.SupabaseApp?.signOut?.();
+        window.SessionTimer?.stopSession?.();
         localStorage.removeItem('userGender');
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
@@ -437,9 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.remove('theme-guest');
             setInstructionImagesByGender();
             profileComplete = true;
-            if (progressIndicator) progressIndicator.classList.add('hidden');
-            currentStep = 3;
-            showStep(3);
+            window.AuthRoutes?.goToDashboard?.();
         } catch (err) {
             profileComplete = false;
             if (profileError) profileError.textContent = err?.message || 'Failed to save profile.';

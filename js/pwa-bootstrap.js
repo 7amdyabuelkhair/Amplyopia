@@ -103,22 +103,15 @@
   document.addEventListener('DOMContentLoaded', () => {
     registerServiceWorker();
     checkVersionUpdate();
+    // Resume timer display if it was started from Lazy Eye (does not auto-start on sign-in).
     window.SessionTimer?.init?.();
 
-    function ensureSessionForSignedInUser() {
-      if (!window.SessionTimer?.isActive?.()) window.SessionTimer?.startSession?.();
+    function subscribePushIfSignedIn(session) {
+      if (session?.user?.id) window.PushClient?.subscribePush?.().catch(() => {});
     }
 
-    window.SupabaseApp?.onAuthStateChange?.((session) => {
-      if (session?.user?.id) {
-        ensureSessionForSignedInUser();
-        window.PushClient?.subscribePush?.().catch(() => {});
-      }
-    });
-
-    window.SupabaseApp?.getSession?.().then((session) => {
-      if (session?.user?.id) ensureSessionForSignedInUser();
-    });
+    window.SupabaseApp?.onAuthStateChange?.(subscribePushIfSignedIn);
+    window.SupabaseApp?.getSession?.().then(subscribePushIfSignedIn);
   });
 
   window.PWA = { checkVersionUpdate };

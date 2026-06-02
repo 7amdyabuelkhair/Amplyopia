@@ -1,5 +1,5 @@
 /* Amplyopia PWA service worker */
-const CACHE_NAME = 'amplyopia-pwa-v1.1.3';
+const CACHE_NAME = 'amplyopia-pwa-v1.1.4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   '/js/session-timer.js',
   '/js/push-client.js',
   '/js/supabase-config.js',
+  '/js/auth-routes.js',
   '/js/supabase.js',
   '/js/app.js',
   '/js/profile.js',

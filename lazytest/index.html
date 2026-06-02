@@ -121,6 +121,11 @@
     document.addEventListener('DOMContentLoaded', function () {
         const yearEl = document.getElementById('year');
         if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+        function startLazyTimer() {
+            window.SessionTimer?.startLazyEyeSession?.();
+        }
+        if (window.SessionTimer) startLazyTimer();
+        else window.addEventListener('load', startLazyTimer);
     });
 </script>
 </body>

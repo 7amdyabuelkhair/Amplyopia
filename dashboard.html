@@ -47,6 +47,10 @@
                     <div class="auth-card" style="margin-bottom:16px;">
                         <div class="auth-body">
                             <div class="auth-error" id="dash-error" aria-live="polite"></div>
+                            <div class="auth-success hidden" id="dash-profile-setup" style="margin-bottom:12px;">
+                                Complete your child profile to personalize training.
+                                <a href="index.html?editProfile=1" class="btn btn-primary" style="display:inline-block;margin-top:8px;">Set up profile</a>
+                            </div>
 
                             <div style="display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:6px;">
                                 <img id="dash-avatar" src="images/logo/yellow-favicon-96x96.png" alt="Child avatar" style="width:74px;height:74px;border-radius:22px;object-fit:cover;border:2px solid var(--border-color);box-shadow:0 10px 26px var(--shadow-soft);">
@@ -91,6 +95,10 @@
                     <div class="auth-card" style="margin-bottom:16px;">
                         <div class="auth-body">
                             <div class="auth-success" style="font-size:16px;">Lazy Eye Training</div>
+                            <p style="margin:0 0 12px;color:var(--text-muted);font-size:14px;">Session timer starts when you open Lazy Eye and continues on other pages.</p>
+                            <div class="form-actions" style="margin-bottom:14px;">
+                                <a class="btn btn-primary btn-next" href="lazytest/index.html?v=20260501-2" id="dash-start-lazy-eye">Start Lazy Eye Training</a>
+                            </div>
                             <div style="display:grid;gap:14px;">
                                 <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
                                     <div style="padding:14px;border-radius:18px;border:2px solid var(--border-color);background:rgba(255,255,255,0.92);box-shadow:0 2px 12px var(--shadow-soft);">
@@ -200,6 +208,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/auth-routes.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/branding.js"></script>
     <script src="js/profile.js"></script>
@@ -304,7 +313,7 @@
                     const session = await window.SupabaseApp?.getSession?.();
                     const uid = session?.user?.id;
                     if (!uid) {
-                        if (errEl) errEl.textContent = 'Please sign in first from the home page.';
+                        window.AuthRoutes?.goToSignIn?.();
                         return;
                     }
 
@@ -320,6 +329,12 @@
                         const assets = window.Branding?.getAssets?.(gender);
                         avatar.src = assets?.logoImg || 'images/logo/yellow-favicon-96x96.png';
                     }
+
+                    const setupEl = document.getElementById('dash-profile-setup');
+                    const profileReady =
+                        !!(profile?.name && profile?.gender && profile?.birthdate) ||
+                        !!(localStorage.getItem('userName') && localStorage.getItem('userGender'));
+                    if (setupEl) setupEl.classList.toggle('hidden', profileReady);
 
                     if (nameEl) nameEl.textContent = name;
                     if (genderEl) genderEl.textContent = gender === 'boy' ? 'Boy' : gender === 'girl' ? 'Girl' : gender;
@@ -485,7 +500,8 @@
             document.getElementById('dash-refresh')?.addEventListener('click', () => load());
             document.getElementById('dash-signout')?.addEventListener('click', async () => {
                 await window.SupabaseApp?.signOut?.();
-                window.location.href = 'index.html';
+                window.SessionTimer?.stopSession?.();
+                window.AuthRoutes?.goToSignIn?.();
             });
 
             load();
