@@ -325,8 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const gender = localStorage.getItem('userGender');
             if (userChipName) userChipName.textContent = nm;
             if (userChipAvatar) {
-                const assets = window.Branding?.getAssets?.(gender);
-                userChipAvatar.src = assets?.logoImg || 'images/logo/yellow-favicon-96x96.png';
+                userChipAvatar.src =
+                    window.Branding?.getAvatarImg?.(gender) || 'images/logo/yellow-favicon-96x96.png';
             }
         }
     }

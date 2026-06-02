@@ -8,6 +8,7 @@
       faviconPng: '/images/logo/blue-favicon-96x96.png',
       appleTouch: '/images/logo/blue-apple-touch-icon.png',
       logoImg: '/images/logo/blue-favicon-96x96.png',
+      avatarImg: '/images/boy.png',
       manifest: '/manifest-boy.json',
       icon192: '/images/logo/blue-web-app-manifest-192x192.png',
       icon512: '/images/logo/blue-web-app-manifest-512x512.png'
@@ -20,6 +21,7 @@
       faviconPng: '/images/logo/pink-favicon-96x96.png',
       appleTouch: '/images/logo/pink-apple-touch-icon.png',
       logoImg: '/images/logo/pink-favicon-96x96.png',
+      avatarImg: '/images/girl.png',
       manifest: '/manifest-girl.json',
       icon192: '/images/logo/pink-web-app-manifest-192x192.png',
       icon512: '/images/logo/pink-web-app-manifest-512x512.png'
@@ -32,6 +34,7 @@
       faviconPng: '/images/logo/yellow-favicon-96x96.png',
       appleTouch: '/images/logo/yellow-apple-touch-icon.png',
       logoImg: '/images/logo/yellow-favicon-96x96.png',
+      avatarImg: '/images/logo/yellow-favicon-96x96.png',
       manifest: '/manifest-guest.json',
       icon192: '/images/logo/yellow-web-app-manifest-192x192.png',
       icon512: '/images/logo/yellow-web-app-manifest-512x512.png'
@@ -47,7 +50,12 @@
 
   function getAssets(theme) {
     const key = themeFromGender(theme);
-    return { key, ...ASSETS[key] };
+    const pack = ASSETS[key];
+    return { key, ...pack, avatarImg: pack.avatarImg || pack.logoImg };
+  }
+
+  function getAvatarImg(themeOrGender) {
+    return getAssets(themeOrGender).avatarImg;
   }
 
   function setLink(id, rel, href, extra = {}) {
@@ -84,8 +92,15 @@
     themeMeta.content = themeColor;
 
     document.querySelectorAll('.logo-img, #site-logo-img').forEach((img) => {
-      img.src = logoImg;
+      const useAvatar = img.dataset.branding === 'avatar';
+      img.src = useAvatar ? getAvatarImg(themeOrGender) : logoImg;
       img.style.display = '';
+    });
+
+    document.querySelectorAll('[data-branding="avatar"]').forEach((img) => {
+      if (!img.classList.contains('logo-img') && img.id !== 'site-logo-img') {
+        img.src = getAvatarImg(themeOrGender);
+      }
     });
 
     if (window.PWA_CONFIG) {
@@ -127,6 +142,7 @@
     ASSETS,
     themeFromGender,
     getAssets,
+    getAvatarImg,
     applyBranding,
     applyFromGender,
     applyFromAuthState
