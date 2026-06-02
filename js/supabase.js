@@ -29,7 +29,7 @@
           storageKey: 'amplyopia-auth-session',
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: false,
+          detectSessionInUrl: true,
           flowType: 'pkce'
         }
       });
@@ -104,7 +104,8 @@
       return { session: null, error: new Error(desc) };
     }
 
-    const { data, error } = await client.auth.exchangeCodeForSession(code);
+    // Let Supabase parse ?code= from the URL (detectSessionInUrl), then clear the URL.
+    const { data, error } = await client.auth.getSession();
     cleanAuthParamsFromUrl();
 
     if (error || !data?.session) {

@@ -16,7 +16,6 @@ const STATIC_ASSETS = [
   '/js/session-timer.js',
   '/js/push-client.js',
   '/js/supabase-config.js',
-  '/js/auth-routes.js',
   '/js/supabase.js',
   '/js/app.js',
   '/js/profile.js',

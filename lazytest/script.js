@@ -3530,6 +3530,7 @@ window.onload = function () {
             welcome.style.pointerEvents = 'none';
             // إظهار المينيو الرئيسي
             document.getElementById('main-menu').classList.remove('hidden');
+            if (window.SessionTimer?.startSession) window.SessionTimer.startSession();
         }, 2400);
     }, 2400);
 };

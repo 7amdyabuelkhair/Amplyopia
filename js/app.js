@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reconsentError = document.getElementById('reconsent-error');
 
     let authMode = 'signin';
+    let authReady = false;
     let pendingTermsAcceptedAt = null;
     let hasAcceptedTerms = false;
     let termsAcceptedAt = null;
@@ -188,20 +189,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (progressIndicator) progressIndicator.classList.remove('hidden');
     }
 
-    function shouldStayOnHomeForProfile() {
-        return isEditProfileMode();
+    function handleAuthSession(session) {
+        if (!authReady) return;
+        hydrateProfileFromSupabase(session);
+        updateNavForSignedIn(!!session?.user?.id);
     }
 
     async function hydrateProfileFromSupabase(session) {
         try {
             if (!session?.user?.id) {
+                if (!authReady) return;
                 showAuthUI();
+                goToSignInStep();
+                updateNavForSignedIn(false);
                 applyThemeFromStoredGender();
-                return;
-            }
-
-            if (!shouldStayOnHomeForProfile()) {
-                window.AuthRoutes?.goToDashboard?.();
                 return;
             }
 
@@ -271,6 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 profileComplete = false;
+                goToSignInStep();
+                showProfileUI();
             }
 
             const isExistingUser = hasName || hasGender || hasBirthdate || !!localStorage.getItem('userName');
@@ -290,9 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('signin') === '1') {
-            goToSignInStep();
-        }
         if (urlParams.get('code') || urlParams.get('error')) {
             goToSignInStep();
         }
@@ -303,7 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
         await hydrateProfileFromSupabase(session);
-        window.SupabaseApp?.onAuthStateChange?.((s) => hydrateProfileFromSupabase(s));
+        updateNavForSignedIn(!!session?.user?.id);
+        authReady = true;
+        window.SupabaseApp?.onAuthStateChange?.(handleAuthSession);
     })();
 
     // Navbar user chip + sign-out
@@ -331,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navSignoutBtn?.addEventListener('click', async () => {
         await window.SupabaseApp?.signOut?.();
-        window.SessionTimer?.stopSession?.();
         localStorage.removeItem('userGender');
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
@@ -347,12 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showStep(1);
         updateNavForSignedIn(false);
     });
-
-    (async () => {
-        const s = await window.SupabaseApp?.getSession?.();
-        updateNavForSignedIn(!!s?.user?.id);
-        window.SupabaseApp?.onAuthStateChange?.((sess) => updateNavForSignedIn(!!sess?.user?.id));
-    })();
 
     googleBtn?.addEventListener('click', async () => {
         try {
@@ -385,15 +380,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 goToSignInStep();
                 if (signup?.session) {
                     await hydrateProfileFromSupabase(signup.session);
+                    updateNavForSignedIn(true);
                     if (authError) authError.textContent = '';
-                } else if (authError) {
-                    authError.textContent =
-                        'Account created! Check your email for a confirmation link, then use Sign in. ' +
-                        'If you do not receive an email, ask your admin to disable “Confirm email” in Supabase or add the redirect URL.';
+                } else {
+                    setAuthMode('signin');
+                    if (authError) {
+                        authError.textContent =
+                            'Account created! Check your email to confirm, then sign in with the same email and password.';
+                    }
                 }
             } else {
                 const session = await window.SupabaseApp?.signInWithPassword?.(email, pass);
-                await hydrateProfileFromSupabase(session || (await window.SupabaseApp?.getSession?.()));
+                const active = session || (await window.SupabaseApp?.getSession?.());
+                await hydrateProfileFromSupabase(active);
+                updateNavForSignedIn(!!active?.user?.id);
             }
         } catch (err) {
             goToSignInStep();
@@ -439,7 +439,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 gender,
                 birthdate
             });
-            await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
+            try {
+                await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
+            } catch (_) {
+                /* optional until user_terms_consents table exists */
+            }
             localStorage.setItem('userName', saved.name);
             localStorage.setItem('userGender', saved.gender);
             localStorage.setItem('userBirthdate', saved.birthdate);
@@ -450,7 +454,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.remove('theme-guest');
             setInstructionImagesByGender();
             profileComplete = true;
-            window.AuthRoutes?.goToDashboard?.();
+            if (progressIndicator) progressIndicator.classList.add('hidden');
+            currentStep = 3;
+            showStep(3);
         } catch (err) {
             profileComplete = false;
             if (profileError) profileError.textContent = err?.message || 'Failed to save profile.';
@@ -468,7 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const uid = session?.user?.id;
             if (!uid) throw new Error('Please sign in first.');
             const acceptedAt = new Date().toISOString();
-            await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
+            try {
+                await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
+            } catch (_) {
+                /* optional until user_terms_consents table exists */
+            }
             setTermsState({ accepted: true, acceptedAt });
             showReconsentModal(false);
         } catch (err) {
