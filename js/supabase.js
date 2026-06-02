@@ -29,7 +29,7 @@
           storageKey: 'amplyopia-auth-session',
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false,
           flowType: 'pkce'
         }
       });
@@ -63,31 +63,42 @@
     return error.message || 'Authentication failed.';
   }
 
+  function cleanAuthParamsFromUrl() {
+    const path = window.location.pathname || '/index.html';
+    const hash = window.location.hash || '';
+    window.history.replaceState({}, document.title, path + hash);
+  }
+
   /** Complete Google OAuth (PKCE) when the page loads with ?code=... */
   async function finishAuthRedirect() {
     if (!client) return { session: null, error: null };
     const params = new URLSearchParams(window.location.search);
     const oauthError = params.get('error');
+    const code = params.get('code');
+    if (!oauthError && !code) return { session: null, error: null };
+
     if (oauthError) {
       const desc = params.get('error_description') || oauthError;
-      window.history.replaceState({}, document.title, window.location.pathname);
+      cleanAuthParamsFromUrl();
       return { session: null, error: new Error(desc) };
     }
-    const code = params.get('code');
-    if (!code) return { session: null, error: null };
 
     const { data, error } = await client.auth.exchangeCodeForSession(code);
-    window.history.replaceState({}, document.title, window.location.pathname);
-    if (error) {
+    cleanAuthParamsFromUrl();
+
+    if (error || !data?.session) {
+      const detail = error?.message ? ` (${error.message})` : '';
       return {
         session: null,
         error: new Error(
-          'Google sign-in could not be completed. In Supabase → Authentication → URL configuration, add this redirect URL: ' +
+          'Google sign-in could not be completed' +
+            detail +
+            '. In Supabase → Authentication → URL configuration, add this exact Redirect URL: ' +
             getAuthRedirectUrl()
         )
       };
     }
-    return { session: data.session || null, error: null };
+    return { session: data.session, error: null };
   }
 
   async function getSession() {
@@ -125,8 +136,9 @@ async function signInWithGoogle() {
 
   async function signInWithPassword(email, password) {
     if (!client) throw new Error('Supabase is not configured.');
-    const { error } = await client.auth.signInWithPassword({ email, password });
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error) throw new Error(formatAuthError(error));
+    return data.session || null;
   }
 
   async function signUp(email, password) {

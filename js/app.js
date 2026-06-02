@@ -182,6 +182,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function goToSignInStep() {
+        currentStep = 2;
+        showStep(2);
+        if (progressIndicator) progressIndicator.classList.remove('hidden');
+    }
+
     async function hydrateProfileFromSupabase(session) {
         try {
             if (!session?.user?.id) {
@@ -190,19 +196,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            goToSignInStep();
             showProfileUI();
+            updateNavForSignedIn(true);
             if (profileError) profileError.textContent = '';
             if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
 
-            const profile = await window.SupabaseApp?.getProfile?.(session.user.id);
-            const termsConsent = await window.SupabaseApp?.getTermsConsent?.(session.user.id);
+            let profile = null;
+            let termsConsent = null;
+            try {
+                profile = await window.SupabaseApp?.getProfile?.(session.user.id);
+            } catch (profileLoadErr) {
+                if (profileError) {
+                    profileError.textContent =
+                        profileLoadErr?.message || 'Signed in, but profile could not be loaded. You can still fill the form below.';
+                }
+            }
+            try {
+                termsConsent = await window.SupabaseApp?.getTermsConsent?.(session.user.id);
+            } catch (_) {
+                /* terms table optional until SQL is applied */
+            }
             setTermsState({
                 accepted: termsConsent?.accepted_terms === true,
                 acceptedAt: termsConsent?.accepted_at || null
             });
 
             if (profile?.name) profileName.value = profile.name;
-            if (profile?.gender && profileGender) profileGender.value = String(profile.gender);
+            if (profile?.gender) {
+                const genderRadio = profileForm?.querySelector(
+                    `input[name="gender"][value="${String(profile.gender)}"]`
+                );
+                if (genderRadio) genderRadio.checked = true;
+            }
             if (profile?.birthdate && profileBirthdate) profileBirthdate.value = String(profile.birthdate);
 
             const hasName = !!(profile?.name && String(profile.name).trim());
@@ -251,7 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
     (async () => {
         if (!window.SupabaseApp?.configured && authError) {
             authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
+            return;
         }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('code') || urlParams.get('error')) {
+            goToSignInStep();
+        }
+
         const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
         if (redirect?.error && authError) {
             authError.textContent = redirect.error.message || 'Google sign-in failed.';
@@ -319,12 +352,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     authEmailForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = authEmailSubmit;
         try {
             if (authError) authError.textContent = '';
             if (signupConsentError) signupConsentError.textContent = '';
             const email = (authEmail?.value || '').trim();
             const pass = authPassword?.value || '';
             if (!email || !pass) throw new Error('Please enter email and password.');
+            if (submitBtn) submitBtn.disabled = true;
+
             if (authMode === 'signup') {
                 if (!signupTermsCheckbox?.checked) {
                     if (signupConsentError) signupConsentError.textContent = 'You must agree to the Terms & Conditions and Privacy Policy to create an account.';
@@ -332,12 +368,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 pendingTermsAcceptedAt = new Date().toISOString();
                 await window.SupabaseApp?.signUp?.(email, pass);
-                if (authError) authError.textContent = 'Check your email to confirm your account (if enabled). You can also sign in now.';
+                goToSignInStep();
+                if (authError) {
+                    authError.textContent = 'Check your email to confirm your account (if enabled). You can also sign in now.';
+                }
             } else {
-                await window.SupabaseApp?.signInWithPassword?.(email, pass);
+                const session = await window.SupabaseApp?.signInWithPassword?.(email, pass);
+                await hydrateProfileFromSupabase(session || (await window.SupabaseApp?.getSession?.()));
             }
         } catch (err) {
+            goToSignInStep();
             if (authError) authError.textContent = err?.message || 'Email sign-in failed.';
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
         }
     });
 
