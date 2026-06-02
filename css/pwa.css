@@ -28,11 +28,53 @@
   background: linear-gradient(135deg, #fff9d6, #fff2a6);
 }
 
+.pwa-session-timer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
 .pwa-session-timer__title {
   font-size: 13px;
   font-weight: 800;
   color: var(--text-dark, #2d3436);
-  margin-bottom: 6px;
+  margin: 0;
+}
+
+.pwa-session-timer__toggle {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-dark, #2d3436);
+}
+
+.pwa-session-timer.is-collapsed {
+  min-width: auto;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.pwa-session-timer.is-collapsed .pwa-session-timer__title,
+.pwa-session-timer.is-collapsed .pwa-session-timer__bar {
+  display: none;
+}
+
+.pwa-session-timer.is-collapsed .pwa-session-timer__head {
+  margin-bottom: 0;
+}
+
+.pwa-session-timer.is-collapsed .pwa-session-timer__time {
+  font-size: 20px;
+  margin: 0;
 }
 
 .pwa-session-timer__time {

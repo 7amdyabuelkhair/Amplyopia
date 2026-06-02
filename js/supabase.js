@@ -41,6 +41,55 @@
 
   const client = createClient();
 
+  function getAuthRedirectUrl() {
+    const { origin, pathname } = window.location;
+    if (/index\.html?$/i.test(pathname)) return `${origin}${pathname}`;
+    const base = pathname.endsWith('/') ? pathname : `${pathname}/`;
+    return `${origin}${base}index.html`;
+  }
+
+  function formatAuthError(error) {
+    if (!error) return 'Authentication failed.';
+    const msg = String(error.message || error.msg || '').toLowerCase();
+    if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
+      return 'Wrong email or password. If you signed up with Google, use Continue with Google instead.';
+    }
+    if (msg.includes('email not confirmed')) {
+      return 'Please confirm your email using the link we sent, then sign in again.';
+    }
+    if (msg.includes('user already registered')) {
+      return 'This email already has an account. Try signing in instead.';
+    }
+    return error.message || 'Authentication failed.';
+  }
+
+  /** Complete Google OAuth (PKCE) when the page loads with ?code=... */
+  async function finishAuthRedirect() {
+    if (!client) return { session: null, error: null };
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get('error');
+    if (oauthError) {
+      const desc = params.get('error_description') || oauthError;
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return { session: null, error: new Error(desc) };
+    }
+    const code = params.get('code');
+    if (!code) return { session: null, error: null };
+
+    const { data, error } = await client.auth.exchangeCodeForSession(code);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    if (error) {
+      return {
+        session: null,
+        error: new Error(
+          'Google sign-in could not be completed. In Supabase → Authentication → URL configuration, add this redirect URL: ' +
+            getAuthRedirectUrl()
+        )
+      };
+    }
+    return { session: data.session || null, error: null };
+  }
+
   async function getSession() {
     if (!client) return null;
     const { data, error } = await client.auth.getSession();
@@ -62,8 +111,7 @@
 async function signInWithGoogle() {
   if (!client) throw new Error('Supabase is not configured.');
 
-  // Must point to an existing static page on GitHub Pages.
-  const redirectTo = `${window.location.origin}/index.html`;
+  const redirectTo = getAuthRedirectUrl();
 
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
@@ -78,18 +126,18 @@ async function signInWithGoogle() {
   async function signInWithPassword(email, password) {
     if (!client) throw new Error('Supabase is not configured.');
     const { error } = await client.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) throw new Error(formatAuthError(error));
   }
 
   async function signUp(email, password) {
     if (!client) throw new Error('Supabase is not configured.');
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const redirectTo = getAuthRedirectUrl();
     const { error } = await client.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectTo }
     });
-    if (error) throw error;
+    if (error) throw new Error(formatAuthError(error));
   }
 
   async function signOut() {
@@ -311,6 +359,8 @@ async function signInWithGoogle() {
     client,
     configured: !!client,
     readConfig,
+    getAuthRedirectUrl,
+    finishAuthRedirect,
     getSession,
     onAuthStateChange,
     signInWithGoogle,

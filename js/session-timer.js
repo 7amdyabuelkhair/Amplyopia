@@ -1,7 +1,20 @@
 (() => {
   const STORAGE_KEY = 'amplyopia_session_end_at';
+  const COLLAPSED_KEY = 'amplyopia_session_timer_collapsed';
   const cfg = () => window.PWA_CONFIG || {};
   const durationMs = () => Number(cfg().SESSION_DURATION_MS) || 40 * 60 * 1000;
+
+  function isCollapsed() {
+    return localStorage.getItem(COLLAPSED_KEY) === '1';
+  }
+
+  function setCollapsed(collapsed) {
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
+  }
+
+  function sessionMinutesLabel() {
+    return Math.round(durationMs() / 60000);
+  }
 
   function getGenderTheme() {
     const g = String(localStorage.getItem('userGender') || '').toLowerCase();
@@ -48,12 +61,38 @@
 
     el = document.createElement('div');
     el.id = 'pwa-session-timer';
-    el.className = `pwa-session-timer ${getGenderTheme()}`;
+    el.className = `pwa-session-timer ${getGenderTheme()}${isCollapsed() ? ' is-collapsed' : ''}`;
     el.innerHTML = `
-      <div class="pwa-session-timer__title">Session time left</div>
+      <div class="pwa-session-timer__head">
+        <div class="pwa-session-timer__title">Session time left</div>
+        <button type="button" class="pwa-session-timer__toggle" id="pwa-session-timer-toggle" aria-label="Minimize timer" title="Minimize">−</button>
+      </div>
       <div class="pwa-session-timer__time" id="pwa-session-timer-time">40:00</div>
       <div class="pwa-session-timer__bar"><span id="pwa-session-timer-bar"></span></div>
     `;
+    el.querySelector('#pwa-session-timer-toggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const next = !el.classList.contains('is-collapsed');
+      el.classList.toggle('is-collapsed', next);
+      setCollapsed(next);
+      const btn = el.querySelector('#pwa-session-timer-toggle');
+      if (btn) {
+        btn.textContent = next ? '+' : '−';
+        btn.setAttribute('aria-label', next ? 'Expand timer' : 'Minimize timer');
+        btn.title = next ? 'Expand' : 'Minimize';
+      }
+    });
+    el.addEventListener('click', () => {
+      if (!el.classList.contains('is-collapsed')) return;
+      el.classList.remove('is-collapsed');
+      setCollapsed(false);
+      const btn = el.querySelector('#pwa-session-timer-toggle');
+      if (btn) {
+        btn.textContent = '−';
+        btn.setAttribute('aria-label', 'Minimize timer');
+        btn.title = 'Minimize';
+      }
+    });
     document.body.appendChild(el);
     return el;
   }
@@ -75,13 +114,18 @@
       hideWidget();
       if (tickTimer) clearInterval(tickTimer);
       tickTimer = null;
-      showLocalNotification('Session complete', 'Great job! Your 40-minute session has finished.');
+      showLocalNotification(
+        'Session complete',
+        `Great job! Your ${sessionMinutesLabel()}-minute session has finished.`
+      );
       localStorage.removeItem(STORAGE_KEY);
       return;
     }
 
     if (!widget) ensureWidget();
-    if (widget) widget.className = `pwa-session-timer ${getGenderTheme()}`;
+    if (widget) {
+      widget.className = `pwa-session-timer ${getGenderTheme()}${isCollapsed() ? ' is-collapsed' : ''}`;
+    }
     if (timeEl) timeEl.textContent = formatTime(remaining);
     if (barEl) barEl.style.width = `${Math.max(0, Math.min(100, (remaining / total) * 100))}%`;
   }
@@ -119,7 +163,9 @@
     init();
     window.SupabaseApp?.onAuthStateChange?.(() => {
       const widget = document.getElementById('pwa-session-timer');
-      if (widget) widget.className = `pwa-session-timer ${getGenderTheme()}`;
+      if (widget) {
+        widget.className = `pwa-session-timer ${getGenderTheme()}${isCollapsed() ? ' is-collapsed' : ''}`;
+      }
     });
   });
 })();

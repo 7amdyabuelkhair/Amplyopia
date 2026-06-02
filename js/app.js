@@ -252,7 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!window.SupabaseApp?.configured && authError) {
             authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
         }
-        const session = await window.SupabaseApp?.getSession?.();
+        const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
+        if (redirect?.error && authError) {
+            authError.textContent = redirect.error.message || 'Google sign-in failed.';
+        }
+        const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
         await hydrateProfileFromSupabase(session);
         window.SupabaseApp?.onAuthStateChange?.((s) => hydrateProfileFromSupabase(s));
     })();
@@ -274,7 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const gender = localStorage.getItem('userGender');
             if (userChipName) userChipName.textContent = nm;
             if (userChipAvatar) {
-                userChipAvatar.src = gender === 'boy' ? 'images/boy.png' : gender === 'girl' ? 'images/girl.png' : 'images/user-icon.png';
+                const assets = window.Branding?.getAssets?.(gender);
+                userChipAvatar.src = assets?.logoImg || 'images/logo/yellow-favicon-96x96.png';
             }
         }
     }
