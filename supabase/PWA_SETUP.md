@@ -7,6 +7,10 @@ Run these files in Supabase SQL Editor (in order):
 1. `supabase/schema.sql`
 2. `supabase/pwa-schema.sql`
 
+If you see **"infinite recursion detected in policy for relation profiles"**, run:
+
+3. `supabase/fix-profiles-rls-recursion.sql`
+
 Set your admin account:
 
 ```sql

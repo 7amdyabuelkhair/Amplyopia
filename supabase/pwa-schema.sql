@@ -69,45 +69,42 @@ on public.notification_targets for update to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+-- Admin helper (security definer avoids infinite RLS recursion on profiles)
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce(
+    (select p.is_admin from public.profiles p where p.id = auth.uid() limit 1),
+    false
+  );
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
 -- Admin can read all profiles
 drop policy if exists "profiles_select_admin_all" on public.profiles;
 create policy "profiles_select_admin_all"
 on public.profiles for select to authenticated
-using (
-  exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.is_admin = true
-  )
-);
+using (public.is_admin());
 
 -- Admin can create notifications + targets
 drop policy if exists "notification_messages_insert_admin" on public.notification_messages;
 create policy "notification_messages_insert_admin"
 on public.notification_messages for insert to authenticated
-with check (
-  exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.is_admin = true
-  )
-);
+with check (public.is_admin());
 
 drop policy if exists "notification_targets_insert_admin" on public.notification_targets;
 create policy "notification_targets_insert_admin"
 on public.notification_targets for insert to authenticated
-with check (
-  exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.is_admin = true
-  )
-);
+with check (public.is_admin());
 
 -- Admin can read all push subscriptions (optional, for debugging)
 drop policy if exists "push_subscriptions_select_admin" on public.push_subscriptions;
 create policy "push_subscriptions_select_admin"
 on public.push_subscriptions for select to authenticated
-using (
-  exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.is_admin = true
-  )
-);
+using (public.is_admin());
