@@ -359,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = (authEmail?.value || '').trim();
             const pass = authPassword?.value || '';
             if (!email || !pass) throw new Error('Please enter email and password.');
+            if (pass.length < 6) throw new Error('Password must be at least 6 characters.');
             if (submitBtn) submitBtn.disabled = true;
 
             if (authMode === 'signup') {
@@ -367,10 +368,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 pendingTermsAcceptedAt = new Date().toISOString();
-                await window.SupabaseApp?.signUp?.(email, pass);
+                const signup = await window.SupabaseApp?.signUp?.(email, pass);
                 goToSignInStep();
-                if (authError) {
-                    authError.textContent = 'Check your email to confirm your account (if enabled). You can also sign in now.';
+                if (signup?.session) {
+                    await hydrateProfileFromSupabase(signup.session);
+                    if (authError) authError.textContent = '';
+                } else if (authError) {
+                    authError.textContent =
+                        'Account created! Check your email for a confirmation link, then use Sign in. ' +
+                        'If you do not receive an email, ask your admin to disable “Confirm email” in Supabase or add the redirect URL.';
                 }
             } else {
                 const session = await window.SupabaseApp?.signInWithPassword?.(email, pass);

@@ -51,14 +51,35 @@
   function formatAuthError(error) {
     if (!error) return 'Authentication failed.';
     const msg = String(error.message || error.msg || '').toLowerCase();
+    const status = Number(error.status || error.code || 0);
+
     if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
       return 'Wrong email or password. If you signed up with Google, use Continue with Google instead.';
     }
     if (msg.includes('email not confirmed')) {
       return 'Please confirm your email using the link we sent, then sign in again.';
     }
-    if (msg.includes('user already registered')) {
-      return 'This email already has an account. Try signing in instead.';
+    if (
+      msg.includes('user already registered') ||
+      msg.includes('already been registered') ||
+      msg.includes('already exists')
+    ) {
+      return 'This email already has an account. Use Sign in instead of Sign up.';
+    }
+    if (msg.includes('password') && (msg.includes('short') || msg.includes('least') || msg.includes('weak'))) {
+      return 'Password must be at least 6 characters.';
+    }
+    if (msg.includes('redirect') || msg.includes('email redirect') || msg.includes('invalid url')) {
+      return (
+        'Sign up failed: redirect URL not allowed in Supabase. Add this URL under Authentication → Redirect URLs: ' +
+        getAuthRedirectUrl()
+      );
+    }
+    if (status === 429 || msg.includes('rate limit') || msg.includes('too many')) {
+      return 'Too many attempts. Please wait a minute and try again.';
+    }
+    if (status === 422 || msg.includes('unable to validate')) {
+      return 'Please enter a valid email address.';
     }
     return error.message || 'Authentication failed.';
   }
@@ -143,13 +164,28 @@ async function signInWithGoogle() {
 
   async function signUp(email, password) {
     if (!client) throw new Error('Supabase is not configured.');
+    if (!email || !password) throw new Error('Please enter email and password.');
+    if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+
     const redirectTo = getAuthRedirectUrl();
-    const { error } = await client.auth.signUp({
+    const { data, error } = await client.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectTo }
     });
     if (error) throw new Error(formatAuthError(error));
+
+    // Supabase may return 200 with empty identities when email already exists (anti-enumeration).
+    const identities = data?.user?.identities;
+    if (Array.isArray(identities) && identities.length === 0) {
+      throw new Error('This email already has an account. Use Sign in instead of Sign up.');
+    }
+
+    return {
+      session: data.session || null,
+      user: data.user || null,
+      needsEmailConfirmation: !data.session
+    };
   }
 
   async function signOut() {

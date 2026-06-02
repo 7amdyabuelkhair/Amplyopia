@@ -1,5 +1,5 @@
 /* Amplyopia PWA service worker */
-const CACHE_NAME = 'amplyopia-pwa-v1.1.2';
+const CACHE_NAME = 'amplyopia-pwa-v1.1.3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
