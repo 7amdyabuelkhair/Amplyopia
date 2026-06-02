@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await window.SupabaseApp?.createAdminNotification?.({
         title,
         body,
-        icon: window.PWA_CONFIG?.NOTIFICATION_ICON || '/images/boy.png',
+        icon: window.PWA_CONFIG?.NOTIFICATION_ICON || '/images/logo/yellow-favicon-96x96.png',
         url,
         userIds
       });

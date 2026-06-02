@@ -1,5 +1,5 @@
 /* Amplyopia PWA service worker */
-const CACHE_NAME = 'amplyopia-pwa-v1.1.0';
+const CACHE_NAME = 'amplyopia-pwa-v1.1.1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -15,8 +15,11 @@ const STATIC_ASSETS = [
   '/js/pwa-bootstrap.js',
   '/js/session-timer.js',
   '/js/push-client.js',
+  '/js/supabase-config.js',
   '/js/supabase.js',
+  '/js/app.js',
   '/js/profile.js',
+  '/js/legal-consent.js',
   '/images/logo/blue-favicon.ico',
   '/images/logo/pink-favicon.ico',
   '/images/logo/yellow-favicon.ico',
@@ -73,7 +76,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  let payload = { title: 'Amplyopia', body: 'You have a new message.', icon: '/images/boy.png' };
+  let payload = { title: 'Amplyopia', body: 'You have a new message.', icon: '/images/logo/yellow-favicon-96x96.png' };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch (_) {
