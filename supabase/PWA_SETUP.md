@@ -13,11 +13,10 @@ If you see **"infinite recursion detected in policy for relation profiles"**, ru
 
 Set your admin account:
 
-```sql
-update public.profiles
-set is_admin = true
-where id = '<your-admin-user-uuid>';
-```
+1. User must exist under **Authentication → Users** (sign up in the app once).
+2. Run **`supabase/set-admin-by-email.sql`** in SQL Editor (edit the email in that file).
+
+Your old query only updates an existing profile row. If you deleted all profiles, it changes **0 rows** and does nothing. The new script **inserts or updates** the profile and sets `is_admin = true`.
 
 ## 2) Configure app
 
