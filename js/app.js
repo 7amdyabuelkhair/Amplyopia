@@ -82,8 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.prevStep = function() {
         if (currentStep === 3) {
-            currentStep = 1;
-            showStep(1);
+            if (profileComplete) return;
+            currentStep = 2;
+            showStep(2);
+            if (progressIndicator) progressIndicator.classList.remove('hidden');
             return;
         }
         if (currentStep > 1) {
@@ -189,6 +191,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (progressIndicator) progressIndicator.classList.remove('hidden');
     }
 
+    function isProfileCompleteLocally() {
+        const name = localStorage.getItem('userName');
+        const gender = localStorage.getItem('userGender');
+        const birthdate = localStorage.getItem('userBirthdate');
+        return !!(name && gender && birthdate);
+    }
+
+    function goToServicesStep() {
+        profileComplete = true;
+        currentStep = 3;
+        showStep(3);
+        if (progressIndicator) progressIndicator.classList.add('hidden');
+        const prevOnServices = document.querySelector('#step-3 .btn-prev');
+        if (prevOnServices) prevOnServices.classList.toggle('hidden', profileComplete);
+        if (window.history.replaceState && window.location.hash !== '#services') {
+            const base = window.location.pathname + window.location.search;
+            window.history.replaceState(null, '', `${base}#services`);
+        }
+    }
+
+    function initWizardStep() {
+        if (isEditProfileMode()) return;
+        if (window.location.hash === '#services' || isProfileCompleteLocally()) {
+            goToServicesStep();
+            return;
+        }
+        showStep(1);
+    }
+
     function handleAuthSession(session) {
         if (!authReady) return;
         hydrateProfileFromSupabase(session);
@@ -266,9 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showStep(2);
                     showProfileUI();
                 } else {
-                    if (progressIndicator) progressIndicator.classList.add('hidden');
-                    currentStep = 3;
-                    showStep(3);
+                    goToServicesStep();
                 }
             } else {
                 profileComplete = false;
@@ -454,9 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.remove('theme-guest');
             setInstructionImagesByGender();
             profileComplete = true;
-            if (progressIndicator) progressIndicator.classList.add('hidden');
-            currentStep = 3;
-            showStep(3);
+            goToServicesStep();
         } catch (err) {
             profileComplete = false;
             if (profileError) profileError.textContent = err?.message || 'Failed to save profile.';
@@ -519,6 +546,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
+            if (isProfileCompleteLocally()) {
+                window.location.href = 'index.html#services';
+                return;
+            }
             if (window.history.length > 1) {
                 window.history.back();
             } else {
@@ -527,6 +558,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initialize first step
-    showStep(1);
+    initWizardStep();
 });
