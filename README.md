@@ -11,8 +11,8 @@
 3. **Enable Google sign-in**  
    **Authentication → Providers → Google** → enable.  
    **Authentication → URL configuration → Redirect URLs**, add:
-   - `https://amplyopia.com/services.html` (main — Google returns here)
-   - `https://amplyopia.com/profile-setup.html`
+   - `https://amplyopia.com/profile-setup.html` (main — **Google sign-in returns here**)
+   - `https://amplyopia.com/services.html`
    - `https://amplyopia.com/index.html`
    - `https://amplyopia.com/`
    - (GitHub Pages: same paths under your repo URL)
@@ -26,7 +26,7 @@
 ### Sign-in flow
 
 1. **`index.html`** — Instructions → **Sign in** (Google or email)  
-2. **`profile-setup.html`** — Child name, boy/girl, birthday (after sign-up, or if profile data is null)  
+2. **`profile-setup.html`** — Google sign-in finishes here; URL shows `?account=<your-user-id>&email=...` so the page knows which account to set up  
 3. **`services.html`** — Choose Service (Dashboard, Vision Test, Lazy Eye, …)
 
 ### Local notifications (your PC only)

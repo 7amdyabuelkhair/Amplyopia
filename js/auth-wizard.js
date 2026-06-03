@@ -35,7 +35,10 @@
     }
   }
 
-  function profileSetupUrl() {
+  function profileSetupUrl(session) {
+    if (session?.user?.id && window.SupabaseApp?.getProfileSetupUrlForSession) {
+      return window.SupabaseApp.getProfileSetupUrlForSession(session);
+    }
     return (
       window.SupabaseApp?.getProfileSetupUrl?.() ||
       new URL('profile-setup.html', `${window.location.origin}/`).href
@@ -125,7 +128,7 @@
               try {
                 sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
               } catch (_) {}
-              window.location.href = profileSetupUrl();
+              window.location.href = profileSetupUrl(session);
               return;
             }
 
@@ -222,7 +225,7 @@
       async function bootstrap() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('code') || urlParams.get('error')) {
-          const target = servicesUrl();
+          const target = profileSetupUrl();
           const q = window.location.search || '';
           window.location.replace(q ? `${target}${q}` : target);
           return;

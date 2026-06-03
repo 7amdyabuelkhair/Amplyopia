@@ -148,8 +148,42 @@
     return getAppPageUrl(getProfileSetupPath());
   }
 
+  /** Google OAuth returns here so sign-in finishes on the same page as profile setup. */
   function getAuthRedirectUrl() {
-    return getServicesUrl();
+    return getProfileSetupUrl();
+  }
+
+  /** Profile setup URL including ?account= & ?email= so the page knows who signed in. */
+  function getProfileSetupUrlForSession(session) {
+    const url = new URL(getProfileSetupUrl());
+    const uid = session?.user?.id;
+    if (uid) url.searchParams.set('account', uid);
+    const email = session?.user?.email;
+    if (email) url.searchParams.set('email', email);
+    return url.href;
+  }
+
+  function rememberSetupAccount(session) {
+    const uid = session?.user?.id;
+    if (!uid) return;
+    try {
+      sessionStorage.setItem('amplyopia_setup_user_id', uid);
+      const email = session?.user?.email;
+      if (email) sessionStorage.setItem('amplyopia_setup_email', email);
+    } catch (_) {}
+  }
+
+  /** After OAuth, keep ?account=<user id>&email=... in the address bar (no ?code=). */
+  function stampSetupAccountInUrl(session) {
+    if (!session?.user?.id) return;
+    rememberSetupAccount(session);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('code');
+    url.searchParams.delete('error');
+    url.searchParams.delete('error_description');
+    url.searchParams.set('account', session.user.id);
+    if (session.user.email) url.searchParams.set('email', session.user.email);
+    window.history.replaceState({}, document.title, url.pathname + url.search);
   }
 
   function listAuthRedirectUrls() {
@@ -166,7 +200,8 @@
       `${origin}${profileSetupPath}`,
       `${origin}/Amplyopia/`,
       `${origin}/Amplyopia/index.html`,
-      `${origin}/Amplyopia/services.html`
+      `${origin}/Amplyopia/services.html`,
+      `${origin}/Amplyopia/profile-setup.html`
     ];
     return [...new Set([primary, ...extras])];
   }
@@ -208,8 +243,12 @@
   }
 
   function cleanAuthParamsFromUrl() {
-    const pathname = window.location.pathname || getServicesPath();
-    window.history.replaceState({}, document.title, pathname);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('code');
+    url.searchParams.delete('error');
+    url.searchParams.delete('error_description');
+    const next = url.pathname + (url.search || '');
+    window.history.replaceState({}, document.title, next || getProfileSetupPath());
   }
 
   /** Complete Google OAuth (PKCE) when the page loads with ?code=... */
@@ -248,6 +287,7 @@
         )
       };
     }
+    rememberSetupAccount(data.session);
     return { session: data.session, error: null, fromOAuth: true };
   }
 
@@ -577,6 +617,9 @@ async function signInWithGoogle() {
     getProfileSetupPath,
     getServicesUrl,
     getProfileSetupUrl,
+    getProfileSetupUrlForSession,
+    stampSetupAccountInUrl,
+    rememberSetupAccount,
     getAuthRedirectUrl,
     listAuthRedirectUrls,
     finishAuthRedirect,

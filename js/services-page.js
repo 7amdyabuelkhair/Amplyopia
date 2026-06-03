@@ -91,24 +91,18 @@
       return;
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('code') || urlParams.get('error')) {
+      const target = profileSetupUrl();
+      const q = window.location.search || '';
+      window.location.replace(q ? `${target}${q}` : target);
+      return;
+    }
+
     try {
-      setLoading('Completing sign-in…', true);
-
-      const redirect = await window.SupabaseApp.finishAuthRedirect();
-      if (redirect?.error) {
-        fail(redirect.error.message);
-        setTimeout(() => {
-          window.location.href = indexUrl();
-        }, 4000);
-        return;
-      }
-
       setLoading('Checking your account…', true);
-      let session = redirect?.session || null;
-      if (session?.user?.id) {
-        await window.SupabaseApp?.ensureSessionPersisted?.(session);
-      }
-      session = session || (await window.SupabaseApp.waitForSession?.(12, 350));
+
+      const session = await window.SupabaseApp.waitForSession?.(12, 350);
       if (!session?.user?.id) {
         fail('Sign-in session was lost. Allow storage for amplyopia.com and sign in again.');
         setTimeout(() => window.location.replace(indexUrl()), 4000);
@@ -124,7 +118,9 @@
       }
 
       if (!window.AuthProfile?.profileIsComplete?.(profile)) {
-        window.location.replace(profileSetupUrl());
+        const setupUrl =
+          window.SupabaseApp?.getProfileSetupUrlForSession?.(session) || profileSetupUrl();
+        window.location.replace(setupUrl);
         return;
       }
 

@@ -1,6 +1,6 @@
 {
-  "version": "2.2.2",
-  "build": 2026060403,
-  "releasedAt": "2026-06-04T03:00:00.000Z",
-  "notes": "Fix app page URLs when navigating from services.html or profile-setup.html."
+  "version": "2.3.0",
+  "build": 2026060404,
+  "releasedAt": "2026-06-04T04:00:00.000Z",
+  "notes": "Google OAuth completes on profile-setup.html with ?account= user id in URL."
 }

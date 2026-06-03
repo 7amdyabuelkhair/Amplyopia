@@ -1,5 +1,6 @@
 /**
- * Child profile setup page — required after sign-up or when profile fields are null.
+ * Child profile setup — Google OAuth completes HERE (not on another page).
+ * URL includes ?account=<user-id>&email=... so the page knows who signed in.
  */
 (() => {
   function setLoading(msg, show) {
@@ -29,6 +30,22 @@
     );
   }
 
+  function accountFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get('account') || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function emailFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get('email') || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   function fillForm(profile) {
     const profileName = document.getElementById('profile-name');
     const profileBirthdate = document.getElementById('profile-birthdate');
@@ -39,6 +56,20 @@
     if (profile.gender) {
       const radio = profileForm?.querySelector(`input[name="gender"][value="${profile.gender}"]`);
       if (radio) radio.checked = true;
+    }
+  }
+
+  function showWelcome(session) {
+    const welcome = document.getElementById('profile-welcome');
+    if (!welcome) return;
+    const email =
+      session?.user?.email || emailFromUrl() || sessionStorage.getItem('amplyopia_setup_email') || '';
+    const accountId = session?.user?.id || accountFromUrl();
+    welcome.textContent = email
+      ? `Signed in as ${email}. Complete the child profile below.`
+      : 'Complete the child profile below.';
+    if (accountId) {
+      welcome.textContent += ` (Account: ${accountId.slice(0, 8)}…)`;
     }
   }
 
@@ -63,11 +94,10 @@
       if (profileError) profileError.textContent = '';
       setLoading('Saving profile…', true);
 
-      const session = await window.SupabaseApp.getSession();
+      let session = await window.SupabaseApp.waitForSession?.(8, 200);
       const uid = session?.user?.id;
       if (!uid) {
-        window.location.replace(indexUrl());
-        return;
+        throw new Error('Sign-in expired. Go to the home page and sign in with Google again.');
       }
 
       const name = (profileName?.value || '').trim();
@@ -90,6 +120,9 @@
       window.AuthProfile?.cacheProfile?.(saved);
       window.Profile?.applyThemeFromGender?.(saved.gender);
       document.body.classList.remove('theme-guest');
+      try {
+        sessionStorage.removeItem('amplyopia_expect_profile');
+      } catch (_) {}
 
       setLoading('Opening services…', true);
       window.location.href = servicesUrl();
@@ -105,29 +138,51 @@
       return;
     }
 
-    try {
-      setLoading('Checking sign-in…', true);
+    const profileError = document.getElementById('profile-error');
 
-      const session = await window.SupabaseApp.waitForSession?.(12, 350);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('code') || params.get('error')) {
+        setLoading('Completing Google sign-in…', true);
+      } else {
+        setLoading('Checking sign-in…', true);
+      }
+
+      const redirect = await window.SupabaseApp.finishAuthRedirect();
+      if (redirect?.error) {
+        setLoading('', false);
+        if (profileError) profileError.textContent = redirect.error.message;
+        setTimeout(() => window.location.replace(indexUrl()), 6000);
+        return;
+      }
+
+      let session = redirect?.session || null;
+      if (session?.user?.id) {
+        await window.SupabaseApp.ensureSessionPersisted?.(session);
+        window.SupabaseApp.stampSetupAccountInUrl?.(session);
+      }
+
+      session = session || (await window.SupabaseApp.waitForSession?.(15, 400));
+
+      const urlAccount = accountFromUrl();
+      if (session?.user?.id && urlAccount && urlAccount !== session.user.id) {
+        window.SupabaseApp.stampSetupAccountInUrl?.(session);
+      }
+
       if (!session?.user?.id) {
         setLoading('', false);
-        const err = document.getElementById('profile-error');
-        const expecting = (() => {
-          try {
-            return sessionStorage.getItem('amplyopia_expect_profile') === '1';
-          } catch (_) {
-            return false;
-          }
-        })();
-        if (err) {
-          err.textContent = expecting
-            ? 'Sign-in could not be saved in this browser (often Edge Tracking Prevention). Allow cookies/storage for amplyopia.com, then sign in again from the home page.'
-            : 'Please sign in from the home page first.';
+        const hintEmail = emailFromUrl() || sessionStorage.getItem('amplyopia_setup_email');
+        if (profileError) {
+          profileError.textContent = hintEmail
+            ? `Could not restore sign-in for ${hintEmail}. Allow cookies/storage for amplyopia.com, then sign in with Google again from the home page.`
+            : 'Please sign in from the home page first (Google or email).';
         }
-        setTimeout(() => {
-          window.location.replace(indexUrl());
-        }, expecting ? 5000 : 2500);
+        setTimeout(() => window.location.replace(indexUrl()), 6000);
         return;
+      }
+
+      if (!urlAccount) {
+        window.SupabaseApp.stampSetupAccountInUrl?.(session);
       }
 
       setLoading('Loading profile…', true);
@@ -145,18 +200,14 @@
       }
 
       window.AuthProfile?.clearLocalProfileCache?.();
-      const welcome = document.getElementById('profile-welcome');
-      if (welcome) {
-        welcome.textContent = `Signed in as ${session.user.email || 'user'}. Complete the form below.`;
-      }
+      showWelcome(session);
       fillForm(profile);
       document.getElementById('profile-main')?.removeAttribute('hidden');
       setLoading('', false);
     } catch (e) {
       console.error(e);
       setLoading('', false);
-      const err = document.getElementById('profile-error');
-      if (err) err.textContent = e?.message || 'Could not load profile setup.';
+      if (profileError) profileError.textContent = e?.message || 'Could not load profile setup.';
     }
   });
 })();

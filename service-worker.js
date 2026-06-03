@@ -1,5 +1,5 @@
 /* Amplyopia PWA service worker */
-const CACHE_NAME = 'amplyopia-pwa-v2.2.2';
+const CACHE_NAME = 'amplyopia-pwa-v2.3.0';
 
 const STATIC_ASSETS = [
   '/manifest.json',
