@@ -199,11 +199,13 @@ document.addEventListener('DOMContentLoaded', () => {
         authCard?.classList.remove('hidden');
         profileCard?.classList.add('hidden');
         profileComplete = false;
+        updateStep2Header('signin');
     }
 
     function showProfileUI() {
         authCard?.classList.add('hidden');
         profileCard?.classList.remove('hidden');
+        updateStep2Header('profile');
     }
 
     function setTermsState({ accepted, acceptedAt }) {
@@ -245,9 +247,59 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasName = !!(profile?.name && String(profile.name).trim());
         const hasGender = !!(profile?.gender && (profile.gender === 'boy' || profile.gender === 'girl'));
         const hasBirthdate = !!(profile?.birthdate && String(profile.birthdate).trim());
-        const computedAge = window.Profile?.computeAgeFromBirthdate?.(profile?.birthdate) ?? null;
+        let computedAge = window.Profile?.computeAgeFromBirthdate?.(profile?.birthdate) ?? null;
+        if (computedAge == null && profile?.age != null) {
+            const legacyAge = Number(profile.age);
+            if (!Number.isNaN(legacyAge) && legacyAge >= 0 && legacyAge <= 120) computedAge = legacyAge;
+        }
         const hasAge = typeof computedAge === 'number' && computedAge >= 0 && computedAge <= 120;
-        return { complete: hasName && hasGender && hasBirthdate && hasAge, computedAge, hasName, hasGender, hasBirthdate };
+        const complete = hasName && hasGender && hasAge && (hasBirthdate || hasAge);
+        return { complete, computedAge, hasName, hasGender, hasBirthdate };
+    }
+
+    const step2Title = document.getElementById('step-2-title');
+    const step2Subtitle = document.getElementById('step-2-subtitle');
+
+    function updateStep2Header(mode) {
+        if (mode === 'profile') {
+            if (step2Title) step2Title.textContent = 'Child profile';
+            if (step2Subtitle) step2Subtitle.textContent = 'Enter the child name, gender, and birthday to continue.';
+        } else {
+            if (step2Title) step2Title.textContent = 'Sign in to Continue';
+            if (step2Subtitle) step2Subtitle.textContent = 'Sign in first, then we’ll ask for the child info';
+        }
+    }
+
+    async function loadProfileSafe(userId) {
+        try {
+            const timeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Profile load timed out')), 10000)
+            );
+            return await Promise.race([window.SupabaseApp?.getProfile?.(userId), timeout]);
+        } catch (e) {
+            console.warn('Profile load failed:', e);
+            return null;
+        }
+    }
+
+    /** After sign-in, always leave the login form and go to services or child profile. */
+    async function ensureRoutedAfterAuth(session) {
+        if (!session?.user?.id) return;
+        if (profileComplete || currentStep === 3) {
+            goToServicesStep();
+            return;
+        }
+        if (isProfileCompleteLocally()) {
+            profileComplete = true;
+            goToServicesStep();
+            return;
+        }
+        goToSignInStep();
+        showProfileUI();
+        updateStep2Header('profile');
+        if (profileWelcome) {
+            profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}. Complete the child profile below.`;
+        }
     }
 
     function goToProfileStep() {
@@ -306,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let profile = null;
             let termsConsent = null;
             try {
-                profile = await window.SupabaseApp?.getProfile?.(session.user.id);
+                profile = await loadProfileSafe(session.user.id);
             } catch (profileLoadErr) {
                 if (profileError) {
                     profileError.textContent =
@@ -383,9 +435,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const isExistingUser = check.hasName || check.hasGender || check.hasBirthdate;
             if (isExistingUser && !hasAcceptedTerms) showReconsentModal(true);
+
+            if (!check.complete && !profileComplete && currentStep !== 3) {
+                await ensureRoutedAfterAuth(session);
+            }
         } catch (e) {
             goToProfileStep();
             if (profileError) profileError.textContent = e?.message || 'Failed to load your profile.';
+            await ensureRoutedAfterAuth(session);
         }
     }
 
@@ -448,7 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
-                if (event === 'INITIAL_SESSION') return;
                 if (event === 'SIGNED_OUT' || !sess?.user?.id) {
                     showSignedOutState();
                     if (!wantsServicesHash() && !wantsSignInQuery() && !isEditProfileMode()) {
@@ -456,7 +512,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return;
                 }
-                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                if (
+                    event === 'INITIAL_SESSION' ||
+                    event === 'SIGNED_IN' ||
+                    event === 'TOKEN_REFRESHED' ||
+                    event === 'USER_UPDATED'
+                ) {
                     void hydrateProfileFromSupabase(sess);
                 }
             });
@@ -546,6 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 goToSignInStep();
                 if (signup?.session) {
                     await hydrateProfileFromSupabase(signup.session);
+                    await ensureRoutedAfterAuth(signup.session);
                     if (authError) authError.textContent = '';
                 } else {
                     setAuthMode('signin');
@@ -559,9 +621,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const active = session || (await window.SupabaseApp?.getSession?.());
                 if (!active?.user?.id) throw new Error('Sign in failed. Please try again.');
                 await hydrateProfileFromSupabase(active);
+                await ensureRoutedAfterAuth(active);
                 if (authError) authError.textContent = '';
             }
         } catch (err) {
+            showAuthUI();
             goToSignInStep();
             if (authError) authError.textContent = err?.message || 'Email sign-in failed.';
         } finally {
