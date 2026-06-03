@@ -115,20 +115,28 @@
     return `${base}index.html`;
   }
 
+  /** Choose Service page — Google OAuth should redirect here */
+  function getServicesPath() {
+    return getAppIndexPath().replace(/index\.html?$/i, 'services.html');
+  }
+
   function getAuthRedirectUrl() {
-    return `${window.location.origin}${getAppIndexPath()}`;
+    return `${window.location.origin}${getServicesPath()}`;
   }
 
   function listAuthRedirectUrls() {
     const primary = getAuthRedirectUrl();
     const origin = window.location.origin;
     const indexPath = getAppIndexPath();
+    const servicesPath = getServicesPath();
     const extras = [
       `${origin}/`,
       `${origin}/index.html`,
       `${origin}${indexPath}`,
+      `${origin}${servicesPath}`,
       `${origin}/Amplyopia/`,
-      `${origin}/Amplyopia/index.html`
+      `${origin}/Amplyopia/index.html`,
+      `${origin}/Amplyopia/services.html`
     ];
     return [...new Set([primary, ...extras])];
   }
@@ -170,9 +178,8 @@
   }
 
   function cleanAuthParamsFromUrl() {
-    const path = getAppIndexPath();
-    const hash = window.location.hash === '#services' ? '#services' : '';
-    window.history.replaceState({}, document.title, path + hash);
+    const pathname = window.location.pathname || getServicesPath();
+    window.history.replaceState({}, document.title, pathname);
   }
 
   /** Complete Google OAuth (PKCE) when the page loads with ?code=... */
@@ -505,6 +512,7 @@ async function signInWithGoogle() {
     configured: !!client,
     readConfig,
     getAppIndexPath,
+    getServicesPath,
     getAuthRedirectUrl,
     listAuthRedirectUrls,
     finishAuthRedirect,

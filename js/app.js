@@ -3,8 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
     let currentStep = 1;
-    const totalSteps = 3;
-    let profileComplete = false;
+    const totalSteps = 2;
     const progressIndicator = document.querySelector('.progress-indicator');
 
     function applyThemeFromStoredGender() {
@@ -64,18 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         progressIndicator?.classList.remove('hidden');
     }
 
-    function goServices() {
-        profileComplete = true;
-        showStep(3);
-        progressIndicator?.classList.add('hidden');
-        const prevOnServices = document.querySelector('#step-3 .btn-prev');
-        if (prevOnServices) prevOnServices.classList.add('hidden');
-        const indexPath = window.SupabaseApp?.getAppIndexPath?.() || 'index.html';
-        try {
-            window.history.replaceState(null, '', `${indexPath}#services`);
-        } catch (_) {}
-    }
-
     function showInstructions() {
         showStep(1);
         progressIndicator?.classList.remove('hidden');
@@ -125,27 +112,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const session = await window.SupabaseApp?.getSession?.();
             if (session?.user?.id) {
                 await authApi?.routeSignedInUser?.(session);
-                return;
             }
         }
-        if (currentStep < totalSteps) showStep(currentStep + 1);
     };
 
     window.prevStep = function () {
-        if (currentStep === 3 && profileComplete) return;
         if (currentStep > 1) showStep(currentStep - 1);
     };
 
     authApi = window.AuthWizard.init({
         showStep,
-        goServices,
+        goServices: () => authApi?.goToServicesPage?.(),
         goSignInStep,
         showInstructions,
         updateNav,
-        setProfileComplete: (v) => {
-            profileComplete = !!v;
-        },
-        getProfileComplete: () => profileComplete,
+        setProfileComplete: () => {},
+        getProfileComplete: () => false,
         onProfileSaved: () => setInstructionImagesByGender(),
         onSignOut: () => {
             clearLocalUser();
@@ -177,34 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nav?.classList.toggle('active');
     });
 
-    const routes = {
-        'opt-lazy-eye': () => {
-            window.location.href = 'lazytest/index.html?v=20260501-2';
-        },
-        'opt-vision-test': () => {
-            window.location.href = 'vision-test.html';
-        },
-        'opt-guidelines': () => {
-            window.location.href = 'guidelines.html';
-        },
-        'opt-report': () => {
-            window.location.href = 'report.html';
-        },
-        'opt-dashboard': () => {
-            window.location.href = 'dashboard.html';
-        }
-    };
-    Object.keys(routes).forEach((id) => {
-        document.getElementById(id)?.addEventListener('click', routes[id]);
-    });
-
     document.getElementById('back-btn')?.addEventListener('click', () => {
-        if (profileComplete) window.location.href = 'index.html#services';
-        else if (window.history.length > 1) window.history.back();
-        else window.location.href = 'index.html';
-    });
-
-    window.addEventListener('hashchange', () => {
-        if (window.location.hash === '#services') void authApi?.tryGoServices?.();
+        window.location.href = 'services.html';
     });
 });

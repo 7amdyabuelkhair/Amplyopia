@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('admin-back-btn')?.addEventListener('click', () => {
-    window.location.href = '../index.html#services';
+    window.location.href = '../services.html';
   });
 
   document.getElementById('admin-refresh-btn')?.addEventListener('click', () =>

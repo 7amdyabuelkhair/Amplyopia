@@ -1,6 +1,6 @@
 {
-  "version": "2.0.2",
-  "build": 2026060324,
-  "releasedAt": "2026-06-04T00:00:00.000Z",
-  "notes": "Loading overlay during sign-in, profile load, and navigation to Choose Service."
+  "version": "2.1.0",
+  "build": 2026060401,
+  "releasedAt": "2026-06-04T01:00:00.000Z",
+  "notes": "Separate services.html page; Google OAuth redirects there instead of index.html?code=."
 }

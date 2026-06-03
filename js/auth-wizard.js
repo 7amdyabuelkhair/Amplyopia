@@ -238,7 +238,11 @@
             try {
               sessionStorage.removeItem(EXPECT_PROFILE_KEY);
             } catch (_) {}
-            goServices();
+            const servicesUrl =
+              window.SupabaseApp?.getServicesPath?.() ||
+              new URL('services.html', window.location.href).pathname;
+            window.location.href = servicesUrl;
+            return;
           } finally {
             routingUser = false;
             setAuthControlsDisabled(false);
@@ -359,7 +363,10 @@
             try {
               sessionStorage.removeItem(EXPECT_PROFILE_KEY);
             } catch (_) {}
-            goServices();
+            const servicesUrl =
+              window.SupabaseApp?.getServicesPath?.() ||
+              new URL('services.html', window.location.href).pathname;
+            window.location.href = servicesUrl;
           });
         } catch (err) {
           if (profileError) profileError.textContent = err?.message || 'Could not save profile.';
@@ -380,7 +387,7 @@
             lastRoutedUserId = null;
             showLoginForm();
             updateNav(false);
-            if (window.location.hash !== '#services') showInstructions();
+            showInstructions();
             return;
           }
           if (event === 'SIGNED_IN') {
@@ -390,6 +397,18 @@
       }
 
       async function bootstrap() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const oauthCode = urlParams.get('code');
+        const oauthError = urlParams.get('error');
+
+        if (oauthCode || oauthError) {
+          const servicesPath =
+            window.SupabaseApp?.getServicesPath?.() ||
+            new URL('services.html', window.location.href).pathname;
+          window.location.replace(`${servicesPath}${window.location.search}`);
+          return;
+        }
+
         if (!window.supabase?.createClient) {
           if (authError) authError.textContent = 'Auth library failed to load. Clear cache and reload.';
           goSignInStep();
@@ -403,39 +422,14 @@
           return;
         }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasOAuthCode = urlParams.get('code');
-        const hasOAuthError = urlParams.get('error');
-
-        if (hasOAuthCode || hasOAuthError) {
-          goSignInStep();
-          await withLoading('Completing Google sign-in…', async () => {
-            const redirect = await window.SupabaseApp.finishAuthRedirect();
-            if (redirect?.error && authError) {
-              authError.textContent = redirect.error.message;
-              showLoginForm();
-              return;
-            }
-            const session = redirect?.session || (await window.SupabaseApp.getSession());
-            if (session?.user?.id) {
-              try {
-                sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
-              } catch (_) {}
-              await routeSignedInUser(session, { force: true });
-            } else {
-              showLoginForm();
-            }
-          });
-          listenForAuth();
-          return;
-        }
+        const wantsProfile = urlParams.get('profile') === '1';
 
         const session = await withLoading('Checking sign-in…', () => window.SupabaseApp.getSession());
         if (session?.user?.id) {
           await routeSignedInUser(session);
         } else {
           showLoginForm();
-          if (window.location.hash === '#services') goSignInStep();
+          if (wantsProfile) goSignInStep();
           else showInstructions();
         }
 
@@ -448,13 +442,11 @@
         routeSignedInUser,
         showLoginForm,
         showProfileForm,
-        tryGoServices: async () => {
-          return withLoading('Loading…', async () => {
-            const session = await window.SupabaseApp.getSession();
-            if (!session?.user?.id) return false;
-            await routeSignedInUser(session, { force: true });
-            return getProfileComplete();
-          });
+        goToServicesPage: () => {
+          const servicesUrl =
+            window.SupabaseApp?.getServicesPath?.() ||
+            new URL('services.html', window.location.href).pathname;
+          window.location.href = servicesUrl;
         }
       };
     }

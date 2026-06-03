@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Choose Service - Amplyopia</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/pwa.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" id="app-favicon-ico" href="/images/logo/yellow-favicon.ico" sizes="any">
+    <link rel="icon" id="app-favicon-png" type="image/png" sizes="96x96" href="/images/logo/yellow-favicon-96x96.png">
+    <link rel="manifest" id="app-manifest" href="/manifest-guest.json">
+    <meta name="theme-color" id="app-theme-color" content="#ffe066">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="logo" href="services.html">
+                <img src="images/logo/yellow-favicon-96x96.png" alt="Amplyopia Logo" class="logo-img" id="site-logo-img" width="40" height="40">
+                <span class="logo-text">amplyopia</span>
+            </a>
+            <nav id="site-nav" class="site-nav" aria-label="Primary">
+                <ul>
+                    <li><a href="dashboard.html" id="nav-dashboard-link">Dashboard</a></li>
+                    <li><button type="button" class="nav-signout" id="nav-signout-btn">Sign out</button></li>
+                </ul>
+            </nav>
+            <a href="dashboard.html" class="user-chip" id="user-chip" aria-label="Open dashboard">
+                <img id="user-chip-avatar" class="user-chip-avatar" src="images/logo/yellow-favicon-96x96.png" alt="">
+                <span id="user-chip-name" class="user-chip-name">Dashboard</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="main-content" id="services-main" hidden>
+        <div class="container">
+            <div class="wizard-step active">
+                <div class="step-content">
+                    <div class="step-header">
+                        <img src="images/dashboard.png" alt="Services" class="step-icon">
+                        <h1 class="step-title">Choose Your Service</h1>
+                        <p class="step-subtitle">Select the vision care service you'd like to use</p>
+                    </div>
+
+                    <div class="options-grid">
+                        <button type="button" class="option-card" id="opt-dashboard">
+                            <div class="option-image-wrapper">
+                                <img src="images/dashboard.png" alt="Dashboard" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Dashboard</h3>
+                            <p class="option-description">Child profile, age, and total score</p>
+                        </button>
+
+                        <button type="button" class="option-card" id="opt-vision-test">
+                            <div class="option-image-wrapper">
+                                <img src="images/vision-test.png" alt="Vision Test" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Vision Test</h3>
+                            <p class="option-description">Test your visual acuity and eye health</p>
+                        </button>
+
+                        <button type="button" class="option-card" id="opt-lazy-eye">
+                            <div class="option-image-wrapper">
+                                <img src="images/lazy-eye.png" alt="Lazy Eye" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Lazy Eye</h3>
+                            <p class="option-description">Amblyopia treatment and exercises</p>
+                        </button>
+
+                        <button type="button" class="option-card" id="opt-guidelines">
+                            <div class="option-image-wrapper">
+                                <img src="images/guidelines.png" alt="Guidelines" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Guidelines</h3>
+                            <p class="option-description">Learn about eye care and vision health</p>
+                        </button>
+
+                        <button type="button" class="option-card" id="opt-report">
+                            <div class="option-image-wrapper">
+                                <img src="images/report.png" alt="Report" class="option-image" onerror="this.style.display='none';">
+                            </div>
+                            <h3 class="option-title">Report</h3>
+                            <p class="option-description">View your test results and history</p>
+                        </button>
+                    </div>
+
+                    <a href="index.html" class="btn btn-secondary" style="margin-top:1rem;display:inline-flex;">← Back to home</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="auth-loading" class="auth-loading" role="status" aria-live="polite" aria-busy="true">
+        <div class="auth-loading-card">
+            <div class="auth-loading-spinner" aria-hidden="true"></div>
+            <p class="auth-loading-title">Please wait</p>
+            <p class="auth-loading-text" id="auth-loading-text">Opening services…</p>
+        </div>
+    </div>
+
+    <p class="auth-error" id="services-error" style="max-width:560px;margin:2rem auto;text-align:center;" aria-live="polite"></p>
+
+    <script src="js/vendor/supabase.min.js?v=2.1.0"></script>
+    <script src="js/supabase-config.js?v=2.1.0"></script>
+    <script src="js/supabase.js?v=2.1.0"></script>
+    <script src="js/branding.js?v=2.1.0"></script>
+    <script src="js/profile.js?v=2.1.0"></script>
+    <script src="js/push-client.js?v=2.1.0"></script>
+    <script src="js/services-page.js?v=2.1.0"></script>
+</body>
+</html>
