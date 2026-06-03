@@ -224,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!authReady) return;
         hydrateProfileFromSupabase(session);
         updateNavForSignedIn(!!session?.user?.id);
+        updateAdminServiceCard(session);
     }
 
     async function hydrateProfileFromSupabase(session) {
@@ -240,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             goToSignInStep();
             showProfileUI();
             updateNavForSignedIn(true);
+            updateAdminServiceCard(session);
             if (profileError) profileError.textContent = '';
             if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
 
@@ -333,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
         await hydrateProfileFromSupabase(session);
         updateNavForSignedIn(!!session?.user?.id);
+        updateAdminServiceCard(session);
         authReady = true;
         window.SupabaseApp?.onAuthStateChange?.(handleAuthSession);
     })();
@@ -343,6 +346,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const userChipAvatar = document.getElementById('user-chip-avatar');
     const navSignoutBtn = document.getElementById('nav-signout-btn');
     const navDashboardLink = document.getElementById('nav-dashboard-link');
+
+    function updateAdminServiceCard(session) {
+        const card = document.getElementById('opt-admin');
+        if (!card) return;
+        const show = !!session?.user?.id && window.SupabaseApp?.isAdminEmail?.(session.user.email);
+        card.classList.toggle('hidden', !show);
+    }
 
     function updateNavForSignedIn(isSignedIn) {
         if (navSignoutBtn) navSignoutBtn.classList.toggle('hidden', !isSignedIn);
@@ -410,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (signup?.session) {
                     await hydrateProfileFromSupabase(signup.session);
                     updateNavForSignedIn(true);
+                    updateAdminServiceCard(signup.session);
                     if (authError) authError.textContent = '';
                 } else {
                     setAuthMode('signin');
@@ -423,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const active = session || (await window.SupabaseApp?.getSession?.());
                 await hydrateProfileFromSupabase(active);
                 updateNavForSignedIn(!!active?.user?.id);
+                updateAdminServiceCard(active);
             }
         } catch (err) {
             goToSignInStep();
@@ -532,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'opt-guidelines': () => { window.location.href = 'guidelines.html'; },
         'opt-report': () => { window.location.href = 'report.html'; },
         'opt-dashboard': () => { window.location.href = 'dashboard.html'; },
-        // red/blue is now inside Lazy Eye Level 6
+        'opt-admin': () => { window.location.href = 'admin/index.html'; }
     };
     
     Object.keys(routes).forEach((id) => {

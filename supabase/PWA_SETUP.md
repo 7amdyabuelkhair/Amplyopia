@@ -37,7 +37,7 @@ Open:
 
 `/admin/index.html`
 
-Sign in with an admin account, select users, and send notifications.
+Sign in on the main app with an admin email (`ADMIN_EMAILS` in `js/pwa-config.js`), open **Admin** from Choose Service (no second password). Or use `/admin/index.html` while already signed in.
 
 ## 5) Push behavior
 

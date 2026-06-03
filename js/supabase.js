@@ -301,14 +301,22 @@ async function signInWithGoogle() {
     return data || [];
   }
 
+  function getAdminEmails() {
+    return (window.PWA_CONFIG?.ADMIN_EMAILS || []).map((x) => String(x).toLowerCase());
+  }
+
+  function isAdminEmail(email) {
+    const e = String(email || '').trim().toLowerCase();
+    return !!e && getAdminEmails().includes(e);
+  }
+
   async function isAdminUser() {
     const session = await getSession();
     const userId = session?.user?.id;
     const email = String(session?.user?.email || '').toLowerCase();
     if (!userId) return false;
 
-    const adminEmails = (window.PWA_CONFIG?.ADMIN_EMAILS || []).map((x) => String(x).toLowerCase());
-    if (email && adminEmails.includes(email)) return true;
+    if (isAdminEmail(email)) return true;
 
     const { data, error } = await client
       .from('profiles')
@@ -423,6 +431,8 @@ async function signInWithGoogle() {
     addScoreEvent,
     getTotalScore,
     listScores,
+    getAdminEmails,
+    isAdminEmail,
     isAdminUser,
     listAllProfilesForAdmin,
     savePushSubscription,

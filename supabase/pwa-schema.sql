@@ -77,10 +77,19 @@ security definer
 set search_path = public
 stable
 as $$
-  select coalesce(
-    (select p.is_admin from public.profiles p where p.id = auth.uid() limit 1),
-    false
-  );
+  select
+    coalesce(
+      (select p.is_admin from public.profiles p where p.id = auth.uid() limit 1),
+      false
+    )
+    or exists (
+      select 1 from auth.users u
+      where u.id = auth.uid()
+      and lower(u.email) in (
+        'hamdyabuelkhair@gmail.com',
+        'aretaj267@gmail.com'
+      )
+    );
 $$;
 
 revoke all on function public.is_admin() from public;

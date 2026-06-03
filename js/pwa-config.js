@@ -4,5 +4,5 @@ window.PWA_CONFIG = {
   NOTIFICATION_ICON: '/images/logo/yellow-favicon-96x96.png',
   APP_LOGO: '/images/logo/yellow-favicon-96x96.png',
   VAPID_PUBLIC_KEY: 'BAtZtJW0PF66EymnSG1td4HyMoZw7Dn_2OIJfifwhJZvZWAAt3aIL-ghI4I22ENHzrDhlf2DFd7fEsTwBpCUnEQ',
-  ADMIN_EMAILS: ['hamdyabuelkhair@gmail.com']
+  ADMIN_EMAILS: ['hamdyabuelkhair@gmail.com', 'aretaj267@gmail.com']
 };
