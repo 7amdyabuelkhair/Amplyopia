@@ -1,5 +1,5 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "build": 2026060403,
   "releasedAt": "2026-06-04T03:00:00.000Z",
   "notes": "Fix app page URLs when navigating from services.html or profile-setup.html."

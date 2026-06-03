@@ -22,57 +22,54 @@
     return { url, anonKey };
   }
 
-  /** Edge Tracking Prevention can block storage; fall back to sessionStorage then memory. */
+  /** Edge may block storage — mirror session to every store that works (not memory-only). */
   function createAuthStorage() {
     const memoryStore = Object.create(null);
-    const memory = {
+    const stores = [];
+
+    function probe(store) {
+      if (!store) return false;
+      try {
+        const k = '__amplyopia_storage_probe__';
+        store.setItem(k, '1');
+        store.removeItem(k);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (probe(window.sessionStorage)) stores.push(window.sessionStorage);
+    if (probe(window.localStorage)) stores.push(window.localStorage);
+
+    return {
       getItem(key) {
+        for (const store of stores) {
+          try {
+            const v = store.getItem(key);
+            if (v != null) return v;
+          } catch (_) {}
+        }
         return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
       },
       setItem(key, value) {
-        memoryStore[key] = String(value);
+        const s = String(value);
+        memoryStore[key] = s;
+        for (const store of stores) {
+          try {
+            store.setItem(key, s);
+          } catch (_) {}
+        }
       },
       removeItem(key) {
         delete memoryStore[key];
-      }
-    };
-
-    function wrap(store) {
-      return {
-        getItem(key) {
-          try {
-            return store.getItem(key);
-          } catch (_) {
-            return memory.getItem(key);
-          }
-        },
-        setItem(key, value) {
-          try {
-            store.setItem(key, String(value));
-          } catch (_) {
-            memory.setItem(key, value);
-          }
-        },
-        removeItem(key) {
+        for (const store of stores) {
           try {
             store.removeItem(key);
-          } catch (_) {
-            memory.removeItem(key);
-          }
+          } catch (_) {}
         }
-      };
-    }
-
-    for (const store of [window.localStorage, window.sessionStorage]) {
-      if (!store) continue;
-      try {
-        const probe = '__amplyopia_storage_probe__';
-        store.setItem(probe, '1');
-        store.removeItem(probe);
-        return wrap(store);
-      } catch (_) {}
-    }
-    return memory;
+      }
+    };
   }
 
   function withTimeout(promise, ms, label) {
@@ -268,6 +265,36 @@
       console.warn('getSession failed:', e);
       return null;
     }
+  }
+
+  /** Retry while Supabase restores session from storage (avoids false redirect to index). */
+  async function waitForSession(attempts = 10, delayMs = 300) {
+    for (let i = 0; i < attempts; i += 1) {
+      const session = await getSession();
+      if (session?.user?.id) return session;
+      if (i < attempts - 1) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+    return null;
+  }
+
+  /** Write session to all storage backends before navigating to another page. */
+  async function ensureSessionPersisted(session) {
+    if (!client || !session?.access_token) return;
+    try {
+      await client.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token
+      });
+      await waitForSession(6, 150);
+    } catch (e) {
+      console.warn('ensureSessionPersisted:', e);
+    }
+  }
+
+  function getIndexUrl() {
+    return getAppPageUrl(getAppIndexPath());
   }
 
   function onAuthStateChange(cb) {
@@ -554,6 +581,9 @@ async function signInWithGoogle() {
     listAuthRedirectUrls,
     finishAuthRedirect,
     getSession,
+    waitForSession,
+    ensureSessionPersisted,
+    getIndexUrl,
     onAuthStateChange,
     signInWithGoogle,
     signInWithPassword,

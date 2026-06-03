@@ -22,6 +22,13 @@
     );
   }
 
+  function indexUrl() {
+    return (
+      window.SupabaseApp?.getIndexUrl?.() ||
+      new URL('index.html', `${window.location.origin}/`).href
+    );
+  }
+
   function fillForm(profile) {
     const profileName = document.getElementById('profile-name');
     const profileBirthdate = document.getElementById('profile-birthdate');
@@ -37,12 +44,12 @@
 
   document.getElementById('nav-signout-btn')?.addEventListener('click', async () => {
     await window.SupabaseApp?.signOut?.();
-    window.location.href = 'index.html';
+    window.location.href = indexUrl();
   });
 
   document.getElementById('auth-signout-btn')?.addEventListener('click', async () => {
     await window.SupabaseApp?.signOut?.();
-    window.location.href = 'index.html';
+    window.location.href = indexUrl();
   });
 
   document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
@@ -59,7 +66,7 @@
       const session = await window.SupabaseApp.getSession();
       const uid = session?.user?.id;
       if (!uid) {
-        window.location.replace('index.html');
+        window.location.replace(indexUrl());
         return;
       }
 
@@ -94,16 +101,32 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!window.SupabaseApp?.configured) {
-      window.location.replace('index.html');
+      window.location.replace(indexUrl());
       return;
     }
 
     try {
       setLoading('Checking sign-in…', true);
 
-      const session = await window.SupabaseApp.getSession();
+      const session = await window.SupabaseApp.waitForSession?.(12, 350);
       if (!session?.user?.id) {
-        window.location.replace('index.html');
+        setLoading('', false);
+        const err = document.getElementById('profile-error');
+        const expecting = (() => {
+          try {
+            return sessionStorage.getItem('amplyopia_expect_profile') === '1';
+          } catch (_) {
+            return false;
+          }
+        })();
+        if (err) {
+          err.textContent = expecting
+            ? 'Sign-in could not be saved in this browser (often Edge Tracking Prevention). Allow cookies/storage for amplyopia.com, then sign in again from the home page.'
+            : 'Please sign in from the home page first.';
+        }
+        setTimeout(() => {
+          window.location.replace(indexUrl());
+        }, expecting ? 5000 : 2500);
         return;
       }
 

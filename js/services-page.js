@@ -22,6 +22,13 @@
     );
   }
 
+  function indexUrl() {
+    return (
+      window.SupabaseApp?.getIndexUrl?.() ||
+      new URL('index.html', `${window.location.origin}/`).href
+    );
+  }
+
   function updateNav(session, profile) {
     const nm = profile?.name || localStorage.getItem('userName') || 'Dashboard';
     const gender = profile?.gender || localStorage.getItem('userGender');
@@ -73,7 +80,7 @@
 
   document.getElementById('nav-signout-btn')?.addEventListener('click', async () => {
     await window.SupabaseApp?.signOut?.();
-    window.location.href = 'index.html';
+    window.location.href = indexUrl();
   });
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -91,15 +98,20 @@
       if (redirect?.error) {
         fail(redirect.error.message);
         setTimeout(() => {
-          window.location.href = 'index.html';
+          window.location.href = indexUrl();
         }, 4000);
         return;
       }
 
       setLoading('Checking your account…', true);
-      const session = redirect?.session || (await window.SupabaseApp.getSession());
+      let session = redirect?.session || null;
+      if (session?.user?.id) {
+        await window.SupabaseApp?.ensureSessionPersisted?.(session);
+      }
+      session = session || (await window.SupabaseApp.waitForSession?.(12, 350));
       if (!session?.user?.id) {
-        window.location.replace('index.html');
+        fail('Sign-in session was lost. Allow storage for amplyopia.com and sign in again.');
+        setTimeout(() => window.location.replace(indexUrl()), 4000);
         return;
       }
 
@@ -120,9 +132,9 @@
       updateNav(session, profile);
       showServicesPage();
 
-      window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
-        if (event === 'SIGNED_OUT' || !sess?.user?.id) {
-          window.location.href = 'index.html';
+      window.SupabaseApp?.onAuthStateChange?.((event) => {
+        if (event === 'SIGNED_OUT') {
+          window.location.href = indexUrl();
         }
       });
 

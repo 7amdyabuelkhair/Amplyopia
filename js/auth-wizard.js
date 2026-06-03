@@ -119,6 +119,8 @@
               console.warn('getProfile:', err);
             }
 
+            await window.SupabaseApp?.ensureSessionPersisted?.(session);
+
             if (!window.AuthProfile?.profileIsComplete?.(profile)) {
               try {
                 sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
