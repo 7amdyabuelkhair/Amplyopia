@@ -1,0 +1,143 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: linear-gradient(160deg, #f4f9ff, #fff9d6);
+  color: #2d3436;
+  min-height: 100vh;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 2px solid #e8eef5;
+  border-radius: 22px;
+  padding: 22px 20px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.sub {
+  margin: 0 0 18px;
+  color: #636e72;
+  font-size: 14px;
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #dfe6ee;
+  border-radius: 14px;
+  font: inherit;
+  margin-bottom: 14px;
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn-primary {
+  background: #2d74d6;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #eef2f7;
+  color: #2d3436;
+}
+
+.users {
+  max-height: 280px;
+  overflow: auto;
+  border: 2px solid #e8eef5;
+  border-radius: 14px;
+  padding: 8px;
+  margin-bottom: 16px;
+  background: #fafcff;
+}
+
+.user-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 8px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.user-row:last-child {
+  border-bottom: none;
+}
+
+.user-meta b {
+  display: block;
+  font-size: 14px;
+}
+
+.user-meta span {
+  font-size: 12px;
+  color: #636e72;
+}
+
+.msg {
+  min-height: 22px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.msg.error {
+  color: #c0392b;
+}
+
+.msg.ok {
+  color: #1e8449;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.setup {
+  background: #fff3cd;
+  border: 2px solid #ffe066;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}

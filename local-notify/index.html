@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amplyopia — Local Notify (private)</title>
+  <link rel="stylesheet" href="notify.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Send notification</h1>
+      <p class="sub">Local tool only — no sign-in. Uses your Supabase service role key.</p>
+
+      <div id="setup-box" class="setup hidden">
+        <strong>Setup required:</strong> copy <code>local-config.example.js</code> to <code>local-config.js</code>
+        and add your Supabase URL + <strong>service role</strong> key. Then refresh this page.
+      </div>
+
+      <p id="status" class="msg" aria-live="polite"></p>
+
+      <form id="notify-form">
+        <label for="title">Title</label>
+        <input id="title" required maxlength="80" placeholder="Training reminder">
+
+        <label for="body">Message</label>
+        <textarea id="body" required maxlength="240" placeholder="Time for your vision exercises!"></textarea>
+
+        <label for="url">Open URL (optional)</label>
+        <input id="url" placeholder="/lazytest/index.html">
+
+        <div class="toolbar">
+          <strong>Select users</strong>
+          <button type="button" class="btn-secondary" id="btn-all">Select all</button>
+          <button type="button" class="btn-secondary" id="btn-none">Clear</button>
+          <button type="button" class="btn-secondary" id="btn-reload">Reload users</button>
+        </div>
+
+        <div id="users" class="users">
+          <p class="sub" style="margin:8px;">Loading users…</p>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-send">Send to selected users</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8"></script>
+  <script src="local-config.js"></script>
+  <script src="notify.js"></script>
+</body>
+</html>
