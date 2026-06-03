@@ -144,7 +144,7 @@
                     <div class="step-header">
                         <img src="images/logo/yellow-favicon-96x96.png" alt="User Information" class="step-icon" id="step-profile-icon">
                         <h1 class="step-title" id="step-2-title">Sign in to Continue</h1>
-                        <p class="step-subtitle" id="step-2-subtitle">Sign in first, then we’ll ask for the child info</p>
+                        <p class="step-subtitle" id="step-2-subtitle">Sign in with Google or email — child profile is on the next page</p>
                     </div>
                     
                     <div class="auth-card" id="auth-card">
@@ -199,54 +199,6 @@
                         </div>
                     </div>
 
-                    <div class="auth-card hidden" id="profile-card">
-                        <div class="auth-body">
-                            <div class="auth-success" id="profile-welcome"></div>
-                            <div class="auth-error" id="profile-error" aria-live="polite"></div>
-
-                            <form class="user-form" id="profile-form">
-                                <div class="profile-grid">
-                                    <div class="form-group">
-                                        <label for="profile-name">Child Name</label>
-                                        <input type="text" id="profile-name" name="name" placeholder="Enter child name" autocomplete="name" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label>Child Gender</label>
-                                        <div class="gender-cards" role="radiogroup" aria-label="Child gender">
-                                            <label class="gender-card">
-                                                <input type="radio" name="gender" value="boy" required>
-                                                <span class="gender-card-inner">
-                                                    <img src="images/boy.png" alt="Boy" class="gender-avatar" onerror="this.style.display='none';">
-                                                    <span class="gender-title">Boy</span>
-                                                </span>
-                                            </label>
-                                            <label class="gender-card">
-                                                <input type="radio" name="gender" value="girl" required>
-                                                <span class="gender-card-inner">
-                                                    <img src="images/girl.png" alt="Girl" class="gender-avatar" onerror="this.style.display='none';">
-                                                    <span class="gender-title">Girl</span>
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="profile-birthdate">Child Birthday</label>
-                                        <input type="date" id="profile-birthdate" name="birthdate" required>
-                                    </div>
-                                </div>
-
-                                <div class="form-actions">
-                                    <button type="button" class="btn btn-secondary" id="auth-signout-btn">Sign out</button>
-                                    <button type="submit" class="btn btn-primary btn-next">
-                                        Save &amp; Continue
-                                        <span class="btn-arrow">→</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -373,19 +325,20 @@
     </div>
 
     <!-- Supabase + auth (self-hosted library for Edge) -->
-    <script src="js/vendor/supabase.min.js?v=2.1.0"></script>
-    <script src="js/supabase-config.js?v=2.1.0"></script>
-    <script src="js/supabase.js?v=2.1.0" defer></script>
-    <script src="js/branding.js?v=2.1.0" defer></script>
-    <script src="js/profile.js?v=2.1.0" defer></script>
-    <script src="js/score.js?v=2.1.0" defer></script>
-    <script src="js/pwa-config.js?v=2.1.0" defer></script>
-    <script src="js/session-timer.js?v=2.1.0" defer></script>
-    <script src="js/push-client.js?v=2.1.0" defer></script>
-    <script src="js/pwa-bootstrap.js?v=2.1.0" defer></script>
-    <script src="js/legal-consent.js?v=2.1.0" defer></script>
-    <script src="js/auth-wizard.js?v=2.1.0" defer></script>
-    <script src="js/app.js?v=2.1.0" defer></script>
+    <script src="js/vendor/supabase.min.js?v=2.2.0"></script>
+    <script src="js/supabase-config.js?v=2.2.0"></script>
+    <script src="js/supabase.js?v=2.2.0" defer></script>
+    <script src="js/branding.js?v=2.2.0" defer></script>
+    <script src="js/profile.js?v=2.2.0" defer></script>
+    <script src="js/auth-profile.js?v=2.2.0" defer></script>
+    <script src="js/score.js?v=2.2.0" defer></script>
+    <script src="js/pwa-config.js?v=2.2.0" defer></script>
+    <script src="js/session-timer.js?v=2.2.0" defer></script>
+    <script src="js/push-client.js?v=2.2.0" defer></script>
+    <script src="js/pwa-bootstrap.js?v=2.2.0" defer></script>
+    <script src="js/legal-consent.js?v=2.2.0" defer></script>
+    <script src="js/auth-wizard.js?v=2.2.0" defer></script>
+    <script src="js/app.js?v=2.2.0" defer></script>
     
     <!-- Structured Data (JSON-LD) for SEO -->
     <script type="application/ld+json">

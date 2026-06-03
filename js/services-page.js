@@ -15,25 +15,11 @@
     }
   }
 
-  function profileIsComplete(profile) {
-    const name = profile?.name && String(profile.name).trim();
-    const gender = profile?.gender;
-    const birthdate = profile?.birthdate && String(profile.birthdate).trim();
-    const validGender = gender === 'boy' || gender === 'girl';
-    const age = window.Profile?.computeAgeFromBirthdate?.(birthdate);
-    const validAge = typeof age === 'number' && age >= 0 && age <= 120;
-    return !!(name && validGender && birthdate && validAge);
-  }
-
-  function cacheProfile(profile) {
-    if (!profile || !profileIsComplete(profile)) return;
-    try {
-      if (profile.name) localStorage.setItem('userName', String(profile.name));
-      if (profile.gender) localStorage.setItem('userGender', String(profile.gender));
-      if (profile.birthdate) localStorage.setItem('userBirthdate', String(profile.birthdate));
-      const age = window.Profile?.computeAgeFromBirthdate?.(profile.birthdate);
-      if (typeof age === 'number') localStorage.setItem('userAge', String(age));
-    } catch (_) {}
+  function profileSetupUrl() {
+    return (
+      window.SupabaseApp?.getProfileSetupPath?.() ||
+      new URL('profile-setup.html', window.location.href).pathname
+    );
   }
 
   function updateNav(session, profile) {
@@ -125,12 +111,12 @@
         console.warn(e);
       }
 
-      if (!profileIsComplete(profile)) {
-        window.location.replace('index.html?profile=1');
+      if (!window.AuthProfile?.profileIsComplete?.(profile)) {
+        window.location.replace(profileSetupUrl());
         return;
       }
 
-      cacheProfile(profile);
+      window.AuthProfile?.cacheProfile?.(profile);
       updateNav(session, profile);
       showServicesPage();
 

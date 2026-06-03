@@ -12,9 +12,10 @@
    **Authentication → Providers → Google** → enable.  
    **Authentication → URL configuration → Redirect URLs**, add:
    - `https://amplyopia.com/services.html` (main — Google returns here)
+   - `https://amplyopia.com/profile-setup.html`
    - `https://amplyopia.com/index.html`
    - `https://amplyopia.com/`
-   - (GitHub Pages: `https://YOUR_USER.github.io/Amplyopia/services.html` and `.../index.html`)
+   - (GitHub Pages: same paths under your repo URL)
 
 4. **Add keys to the app**  
    Edit `js/supabase-config.js` with your project **URL** and **anon** key (never the service_role key).
@@ -24,9 +25,9 @@
 
 ### Sign-in flow
 
-1. Instructions → **Sign in** (Google or email)  
-2. If the child profile is missing → fill name, gender, birthday → **Save & Continue**  
-3. **Choose Service** at `services.html` (opens after sign-in when profile is complete)
+1. **`index.html`** — Instructions → **Sign in** (Google or email)  
+2. **`profile-setup.html`** — Child name, boy/girl, birthday (after sign-up, or if profile data is null)  
+3. **`services.html`** — Choose Service (Dashboard, Vision Test, Lazy Eye, …)
 
 ### Local notifications (your PC only)
 

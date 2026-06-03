@@ -120,6 +120,11 @@
     return getAppIndexPath().replace(/index\.html?$/i, 'services.html');
   }
 
+  /** Child profile setup page */
+  function getProfileSetupPath() {
+    return getAppIndexPath().replace(/index\.html?$/i, 'profile-setup.html');
+  }
+
   function getAuthRedirectUrl() {
     return `${window.location.origin}${getServicesPath()}`;
   }
@@ -129,11 +134,13 @@
     const origin = window.location.origin;
     const indexPath = getAppIndexPath();
     const servicesPath = getServicesPath();
+    const profileSetupPath = getProfileSetupPath();
     const extras = [
       `${origin}/`,
       `${origin}/index.html`,
       `${origin}${indexPath}`,
       `${origin}${servicesPath}`,
+      `${origin}${profileSetupPath}`,
       `${origin}/Amplyopia/`,
       `${origin}/Amplyopia/index.html`,
       `${origin}/Amplyopia/services.html`
@@ -513,6 +520,7 @@ async function signInWithGoogle() {
     readConfig,
     getAppIndexPath,
     getServicesPath,
+    getProfileSetupPath,
     getAuthRedirectUrl,
     listAuthRedirectUrls,
     finishAuthRedirect,

@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('theme-boy', 'theme-girl');
         document.body.classList.add('theme-guest');
         setInstructionImagesByGender();
-        authApi?.showLoginForm?.();
+        goSignInStep();
         updateNav(false);
         showInstructions();
     });

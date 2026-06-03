@@ -7,7 +7,7 @@
   function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
     navigator.serviceWorker
-      .register('/service-worker.js?v=2.1.0', { scope: '/' })
+      .register('/service-worker.js?v=2.2.0', { scope: '/' })
       .then((reg) => {
         reg.addEventListener('updatefound', () => {
           const worker = reg.installing;
