@@ -5,6 +5,42 @@
   const UID_KEY = 'amplyopia_last_user_id';
   const EXPECT_PROFILE_KEY = 'amplyopia_expect_profile';
 
+  let loadingDepth = 0;
+
+  function showLoading(message) {
+    const overlay = document.getElementById('auth-loading');
+    const text = document.getElementById('auth-loading-text');
+    if (text && message) text.textContent = message;
+    loadingDepth += 1;
+    overlay?.classList.remove('hidden');
+    if (overlay) overlay.setAttribute('aria-busy', 'true');
+    document.body.classList.add('auth-loading-active');
+  }
+
+  function hideLoading() {
+    loadingDepth = Math.max(0, loadingDepth - 1);
+    if (loadingDepth > 0) return;
+    const overlay = document.getElementById('auth-loading');
+    overlay?.classList.add('hidden');
+    if (overlay) overlay.setAttribute('aria-busy', 'false');
+    document.body.classList.remove('auth-loading-active');
+  }
+
+  async function withLoading(message, fn) {
+    showLoading(message);
+    try {
+      return await fn();
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function setAuthControlsDisabled(disabled) {
+    document.getElementById('auth-google-btn')?.toggleAttribute('disabled', disabled);
+    document.getElementById('auth-email-submit')?.toggleAttribute('disabled', disabled);
+    document.querySelector('#profile-form button[type="submit"]')?.toggleAttribute('disabled', disabled);
+  }
+
   function profileIsComplete(profile) {
     const name = profile?.name && String(profile.name).trim();
     const gender = profile?.gender;
@@ -151,53 +187,63 @@
         }
 
         if (routingUser && lastRoutedUserId === session.user.id && !options.force) return;
-        routingUser = true;
-        lastRoutedUserId = session.user.id;
 
-        try {
-          syncUserIdentity(session);
-          updateNav(true);
-          if (authError) authError.textContent = '';
-          if (profileError) profileError.textContent = '';
+        await withLoading('Loading your account…', async () => {
+          routingUser = true;
+          lastRoutedUserId = session.user.id;
+          setAuthControlsDisabled(true);
 
-          let profile = null;
           try {
-            profile = await window.SupabaseApp.getProfile(session.user.id);
-          } catch (err) {
-            console.warn('getProfile:', err);
-            if (profileError) {
-              profileError.textContent =
-                err?.message || 'Could not load profile. Fill the form below and save.';
-            }
-          }
+            syncUserIdentity(session);
+            updateNav(true);
+            if (authError) authError.textContent = '';
+            if (profileError) profileError.textContent = '';
 
-          const complete = profileIsComplete(profile);
+            const text = document.getElementById('auth-loading-text');
+            if (text) text.textContent = 'Loading child profile…';
 
-          if (!complete) {
-            clearLocalProfileCache();
-            resetProfileForm();
-            fillProfileForm(profile);
-            showProfileForm(session.user.email);
-            return;
-          }
-
-          fillProfileForm(profile);
-          if (profile?.gender) {
-            window.Profile?.applyThemeFromGender?.(profile.gender);
+            let profile = null;
             try {
-              localStorage.setItem('userGender', String(profile.gender));
+              profile = await window.SupabaseApp.getProfile(session.user.id);
+            } catch (err) {
+              console.warn('getProfile:', err);
+              if (profileError) {
+                profileError.textContent =
+                  err?.message || 'Could not load profile. Fill the form below and save.';
+              }
+            }
+
+            const complete = profileIsComplete(profile);
+
+            if (!complete) {
+              clearLocalProfileCache();
+              resetProfileForm();
+              fillProfileForm(profile);
+              showProfileForm(session.user.email);
+              return;
+            }
+
+            if (text) text.textContent = 'Opening Choose Service…';
+
+            fillProfileForm(profile);
+            if (profile?.gender) {
+              window.Profile?.applyThemeFromGender?.(profile.gender);
+              try {
+                localStorage.setItem('userGender', String(profile.gender));
+              } catch (_) {}
+              document.body.classList.remove('theme-guest');
+            }
+            cacheProfile(profile);
+            setProfileComplete(true);
+            try {
+              sessionStorage.removeItem(EXPECT_PROFILE_KEY);
             } catch (_) {}
-            document.body.classList.remove('theme-guest');
+            goServices();
+          } finally {
+            routingUser = false;
+            setAuthControlsDisabled(false);
           }
-          cacheProfile(profile);
-          setProfileComplete(true);
-          try {
-            sessionStorage.removeItem(EXPECT_PROFILE_KEY);
-          } catch (_) {}
-          goServices();
-        } finally {
-          routingUser = false;
-        }
+        });
       }
 
       function setAuthMode(mode) {
@@ -226,22 +272,24 @@
           try {
             sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
           } catch (_) {}
+          showLoading('Redirecting to Google…');
+          setAuthControlsDisabled(true);
           await window.SupabaseApp.signInWithGoogle();
         } catch (e) {
+          hideLoading();
+          setAuthControlsDisabled(false);
           if (authError) authError.textContent = e?.message || 'Google sign-in failed.';
         }
       });
 
       authEmailForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = authEmailSubmit;
         try {
           if (authError) authError.textContent = '';
           const email = (authEmail?.value || '').trim();
           const pass = authPassword?.value || '';
           if (!email || !pass) throw new Error('Enter email and password.');
           if (pass.length < 6) throw new Error('Password must be at least 6 characters.');
-          if (btn) btn.disabled = true;
 
           if (authMode === 'signup') {
             if (!signupTermsCheckbox?.checked) {
@@ -253,25 +301,27 @@
             try {
               sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
             } catch (_) {}
-            const signup = await window.SupabaseApp.signUp(email, pass);
-            if (signup?.session) {
-              await routeSignedInUser(signup.session, { force: true });
-            } else {
-              setAuthMode('signin');
-              authError.textContent =
-                'Account created. Check your email to confirm, then sign in.';
-            }
+            await withLoading('Creating your account…', async () => {
+              const signup = await window.SupabaseApp.signUp(email, pass);
+              if (signup?.session) {
+                await routeSignedInUser(signup.session, { force: true });
+              } else {
+                setAuthMode('signin');
+                authError.textContent =
+                  'Account created. Check your email to confirm, then sign in.';
+              }
+            });
           } else {
-            const session = await window.SupabaseApp.signInWithPassword(email, pass);
-            if (!session?.user?.id) throw new Error('Sign in failed. Try again.');
-            await routeSignedInUser(session, { force: true });
+            await withLoading('Signing you in…', async () => {
+              const session = await window.SupabaseApp.signInWithPassword(email, pass);
+              if (!session?.user?.id) throw new Error('Sign in failed. Try again.');
+              await routeSignedInUser(session, { force: true });
+            });
           }
         } catch (err) {
           showLoginForm();
           goSignInStep();
           if (authError) authError.textContent = err?.message || 'Sign in failed.';
-        } finally {
-          if (btn) btn.disabled = false;
         }
       });
 
@@ -292,23 +342,25 @@
           if (gender !== 'boy' && gender !== 'girl') throw new Error('Choose boy or girl.');
           if (!birthdate) throw new Error('Enter the child birthday.');
 
-          const saved = await window.SupabaseApp.upsertProfile({ id: uid, name, gender, birthdate });
-          try {
-            await window.SupabaseApp.saveTermsConsent({
-              userId: uid,
-              acceptedAt: pendingTermsAcceptedAt || new Date().toISOString()
-            });
-          } catch (_) {}
+          await withLoading('Saving profile and opening services…', async () => {
+            const saved = await window.SupabaseApp.upsertProfile({ id: uid, name, gender, birthdate });
+            try {
+              await window.SupabaseApp.saveTermsConsent({
+                userId: uid,
+                acceptedAt: pendingTermsAcceptedAt || new Date().toISOString()
+              });
+            } catch (_) {}
 
-          cacheProfile(saved);
-          window.Profile?.applyThemeFromGender?.(saved.gender);
-          document.body.classList.remove('theme-guest');
-          ctx.onProfileSaved?.();
-          setProfileComplete(true);
-          try {
-            sessionStorage.removeItem(EXPECT_PROFILE_KEY);
-          } catch (_) {}
-          goServices();
+            cacheProfile(saved);
+            window.Profile?.applyThemeFromGender?.(saved.gender);
+            document.body.classList.remove('theme-guest');
+            ctx.onProfileSaved?.();
+            setProfileComplete(true);
+            try {
+              sessionStorage.removeItem(EXPECT_PROFILE_KEY);
+            } catch (_) {}
+            goServices();
+          });
         } catch (err) {
           if (profileError) profileError.textContent = err?.message || 'Could not save profile.';
         }
@@ -357,25 +409,28 @@
 
         if (hasOAuthCode || hasOAuthError) {
           goSignInStep();
-          const redirect = await window.SupabaseApp.finishAuthRedirect();
-          if (redirect?.error && authError) {
-            authError.textContent = redirect.error.message;
-            showLoginForm();
-            listenForAuth();
-            return;
-          }
-          const session = redirect?.session || (await window.SupabaseApp.getSession());
-          if (session?.user?.id) {
-            try {
-              sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
-            } catch (_) {}
-            await routeSignedInUser(session, { force: true });
-            listenForAuth();
-            return;
-          }
+          await withLoading('Completing Google sign-in…', async () => {
+            const redirect = await window.SupabaseApp.finishAuthRedirect();
+            if (redirect?.error && authError) {
+              authError.textContent = redirect.error.message;
+              showLoginForm();
+              return;
+            }
+            const session = redirect?.session || (await window.SupabaseApp.getSession());
+            if (session?.user?.id) {
+              try {
+                sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
+              } catch (_) {}
+              await routeSignedInUser(session, { force: true });
+            } else {
+              showLoginForm();
+            }
+          });
+          listenForAuth();
+          return;
         }
 
-        const session = await window.SupabaseApp.getSession();
+        const session = await withLoading('Checking sign-in…', () => window.SupabaseApp.getSession());
         if (session?.user?.id) {
           await routeSignedInUser(session);
         } else {
@@ -394,10 +449,12 @@
         showLoginForm,
         showProfileForm,
         tryGoServices: async () => {
-          const session = await window.SupabaseApp.getSession();
-          if (!session?.user?.id) return false;
-          await routeSignedInUser(session, { force: true });
-          return getProfileComplete();
+          return withLoading('Loading…', async () => {
+            const session = await window.SupabaseApp.getSession();
+            if (!session?.user?.id) return false;
+            await routeSignedInUser(session, { force: true });
+            return getProfileComplete();
+          });
         }
       };
     }

@@ -1,6 +1,6 @@
 {
-  "version": "2.0.1",
-  "build": 2026060323,
-  "releasedAt": "2026-06-03T23:00:00.000Z",
-  "notes": "After Google sign-up, always show child profile (name, gender, birthday). SQL trigger creates empty profile row."
+  "version": "2.0.2",
+  "build": 2026060324,
+  "releasedAt": "2026-06-04T00:00:00.000Z",
+  "notes": "Loading overlay during sign-in, profile load, and navigation to Choose Service."
 }
