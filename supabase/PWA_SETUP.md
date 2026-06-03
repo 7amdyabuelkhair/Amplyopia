@@ -4,6 +4,10 @@
 
 Run these files in Supabase SQL Editor (in order):
 
+**Easiest:** run `supabase/full-setup.sql` once (includes everything below).
+
+Or run separately:
+
 1. `supabase/schema.sql`
 2. `supabase/pwa-schema.sql`
 

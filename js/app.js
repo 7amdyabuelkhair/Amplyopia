@@ -197,6 +197,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return !!(name && gender && birthdate);
     }
 
+    function isProfileComplete(profile) {
+        const hasName = !!(profile?.name && String(profile.name).trim());
+        const hasGender = !!(profile?.gender && (profile.gender === 'boy' || profile.gender === 'girl'));
+        const hasBirthdate = !!(profile?.birthdate && String(profile.birthdate).trim());
+        const computedAge = window.Profile?.computeAgeFromBirthdate?.(profile?.birthdate) ?? null;
+        const hasAge = typeof computedAge === 'number' && computedAge >= 0 && computedAge <= 120;
+        return { complete: hasName && hasGender && hasBirthdate && hasAge, computedAge, hasName, hasGender, hasBirthdate };
+    }
+
+    function goToProfileStep() {
+        profileComplete = false;
+        goToSignInStep();
+        showProfileUI();
+        if (profileWelcome) {
+            profileWelcome.textContent = 'Please enter the child name, gender, and birthday to continue.';
+        }
+    }
+
     function goToServicesStep() {
         profileComplete = true;
         currentStep = 3;
@@ -204,9 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (progressIndicator) progressIndicator.classList.add('hidden');
         const prevOnServices = document.querySelector('#step-3 .btn-prev');
         if (prevOnServices) prevOnServices.classList.toggle('hidden', profileComplete);
-        if (window.history.replaceState && window.location.hash !== '#services') {
-            const base = window.location.pathname + window.location.search;
-            window.history.replaceState(null, '', `${base}#services`);
+        const indexPath = window.SupabaseApp?.getAppIndexPath?.() || window.location.pathname;
+        if (window.history.replaceState) {
+            window.history.replaceState(null, '', `${indexPath}#services`);
         }
     }
 
@@ -226,11 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            goToSignInStep();
-            showProfileUI();
             updateNavForSignedIn(true);
             if (profileError) profileError.textContent = '';
-            if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
+            if (authError) authError.textContent = '';
 
             let profile = null;
             let termsConsent = null;
@@ -261,44 +277,43 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (profile?.birthdate && profileBirthdate) profileBirthdate.value = String(profile.birthdate);
 
-            const hasName = !!(profile?.name && String(profile.name).trim());
-            const hasGender = !!(profile?.gender && (profile.gender === 'boy' || profile.gender === 'girl'));
-            const hasBirthdate = !!(profile?.birthdate && String(profile.birthdate).trim());
-            const computedAge = window.Profile?.computeAgeFromBirthdate?.(profile?.birthdate) ?? null;
-            const hasAge = typeof computedAge === 'number' && computedAge >= 0 && computedAge <= 120;
+            const check = isProfileComplete(profile);
 
-            if (hasGender) {
+            if (check.hasGender && profile?.gender) {
                 window.Profile?.applyThemeFromGender?.(profile.gender);
                 localStorage.setItem('userGender', String(profile.gender));
                 document.body.classList.remove('theme-guest');
             }
 
-            if (hasName && hasGender && hasBirthdate && hasAge) {
+            if (check.complete) {
                 localStorage.setItem('userName', String(profile.name));
                 localStorage.setItem('userBirthdate', String(profile.birthdate));
-                localStorage.setItem('userAge', String(computedAge));
-                profileComplete = true;
+                localStorage.setItem('userAge', String(check.computedAge));
                 setInstructionImagesByGender();
-                // Never show sign-in/profile steps after sign-in unless user explicitly edits profile
                 if (isEditProfileMode()) {
+                    profileComplete = true;
                     if (progressIndicator) progressIndicator.classList.remove('hidden');
                     currentStep = 2;
                     showStep(2);
                     showProfileUI();
+                    if (profileWelcome) {
+                        profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
+                    }
                 } else {
                     goToServicesStep();
                 }
             } else {
-                profileComplete = false;
-                goToSignInStep();
-                showProfileUI();
+                if (profileWelcome) {
+                    profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}. Complete the child profile below.`;
+                }
+                goToProfileStep();
+                if (!pendingTermsAcceptedAt) pendingTermsAcceptedAt = new Date().toISOString();
             }
 
-            const isExistingUser = hasName || hasGender || hasBirthdate || !!localStorage.getItem('userName');
+            const isExistingUser = check.hasName || check.hasGender || check.hasBirthdate;
             if (isExistingUser && !hasAcceptedTerms) showReconsentModal(true);
         } catch (e) {
-            showProfileUI();
-            profileComplete = false;
+            goToProfileStep();
             if (profileError) profileError.textContent = e?.message || 'Failed to load your profile.';
         }
     }
@@ -324,11 +339,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
             if (event === 'INITIAL_SESSION') return;
-            if (!sess?.user?.id) {
+            if (event === 'SIGNED_OUT' || !sess?.user?.id) {
                 showSignedOutState();
                 return;
             }
-            void hydrateProfileFromSupabase(sess);
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                void hydrateProfileFromSupabase(sess);
+            }
         });
     })();
 
@@ -338,13 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const userChipAvatar = document.getElementById('user-chip-avatar');
     const navSignoutBtn = document.getElementById('nav-signout-btn');
     const navDashboardLink = document.getElementById('nav-dashboard-link');
-
-    function updateAdminServiceCard(session) {
-        const card = document.getElementById('opt-admin');
-        if (!card) return;
-        const show = !!session?.user?.id && window.SupabaseApp?.isAdminEmail?.(session.user.email);
-        card.classList.toggle('hidden', !show);
-    }
 
     function updateNavForSignedIn(isSignedIn) {
         if (navSignoutBtn) navSignoutBtn.classList.toggle('hidden', !isSignedIn);

@@ -41,11 +41,28 @@
 
   const client = createClient();
 
-  function getAuthRedirectUrl() {
-    const { origin, pathname } = window.location;
-    if (/index\.html?$/i.test(pathname)) return `${origin}${pathname}`;
+  /** Path to index.html (works on amplyopia.com and GitHub Pages /Amplyopia/) */
+  function getAppIndexPath() {
+    const pathname = window.location.pathname || '/';
+    if (/index\.html?$/i.test(pathname)) return pathname;
     const base = pathname.endsWith('/') ? pathname : `${pathname}/`;
-    return `${origin}${base}index.html`;
+    return `${base}index.html`;
+  }
+
+  function getAuthRedirectUrl() {
+    return `${window.location.origin}${getAppIndexPath()}`;
+  }
+
+  function listAuthRedirectUrls() {
+    const primary = getAuthRedirectUrl();
+    const origin = window.location.origin;
+    const extras = [
+      `${origin}/`,
+      `${origin}/index.html`,
+      `${origin}/Amplyopia/`,
+      `${origin}/Amplyopia/index.html`
+    ];
+    return [...new Set([primary, ...extras])];
   }
 
   function formatAuthError(error) {
@@ -85,8 +102,8 @@
   }
 
   function cleanAuthParamsFromUrl() {
-    const path = window.location.pathname || '/index.html';
-    const hash = window.location.hash || '';
+    const path = getAppIndexPath();
+    const hash = window.location.hash === '#services' ? '#services' : '';
     window.history.replaceState({}, document.title, path + hash);
   }
 
@@ -114,8 +131,8 @@
         error: new Error(
           'Google sign-in could not be completed' +
             detail +
-            '. In Supabase → Authentication → URL configuration, add this exact Redirect URL: ' +
-            getAuthRedirectUrl()
+            '. In Supabase → Authentication → URL configuration, add ALL of these Redirect URLs: ' +
+            listAuthRedirectUrls().join(' , ')
         )
       };
     }
@@ -144,12 +161,16 @@ async function signInWithGoogle() {
   if (!client) throw new Error('Supabase is not configured.');
 
   const redirectTo = getAuthRedirectUrl();
+  try {
+    sessionStorage.setItem('amplyopia_oauth_return', redirectTo);
+  } catch (_) {}
 
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo,
-    },
+      queryParams: { prompt: 'select_account' }
+    }
   });
 
   if (error) throw error;
@@ -403,7 +424,9 @@ async function signInWithGoogle() {
     client,
     configured: !!client,
     readConfig,
+    getAppIndexPath,
     getAuthRedirectUrl,
+    listAuthRedirectUrls,
     finishAuthRedirect,
     getSession,
     onAuthStateChange,
