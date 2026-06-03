@@ -37,15 +37,15 @@
 
   function profileSetupUrl() {
     return (
-      window.SupabaseApp?.getProfileSetupPath?.() ||
-      new URL('profile-setup.html', window.location.href).pathname
+      window.SupabaseApp?.getProfileSetupUrl?.() ||
+      new URL('profile-setup.html', `${window.location.origin}/`).href
     );
   }
 
   function servicesUrl() {
     return (
-      window.SupabaseApp?.getServicesPath?.() ||
-      new URL('services.html', window.location.href).pathname
+      window.SupabaseApp?.getServicesUrl?.() ||
+      new URL('services.html', `${window.location.origin}/`).href
     );
   }
 
@@ -220,10 +220,9 @@
       async function bootstrap() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('code') || urlParams.get('error')) {
-          const servicesPath =
-            window.SupabaseApp?.getServicesPath?.() ||
-            new URL('services.html', window.location.href).pathname;
-          window.location.replace(`${servicesPath}${window.location.search}`);
+          const target = servicesUrl();
+          const q = window.location.search || '';
+          window.location.replace(q ? `${target}${q}` : target);
           return;
         }
 

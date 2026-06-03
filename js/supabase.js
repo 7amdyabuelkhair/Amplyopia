@@ -107,26 +107,52 @@
 
   const client = createClient();
 
+  /** App pages at site root (or under /Amplyopia/ on GitHub Pages) */
+  const APP_PAGE_RE =
+    /\/(?:index|services|profile-setup|dashboard|vision-test|guidelines|report)\.html?$/i;
+
+  /** Directory containing index.html (e.g. `/` or `/Amplyopia/`) */
+  function getAppBasePath() {
+    const pathname = window.location.pathname || '/';
+    let base = pathname.replace(APP_PAGE_RE, '');
+    if (!base || base === '/') return '/';
+    return base.endsWith('/') ? base : `${base}/`;
+  }
+
+  function getAppPagePath(filename) {
+    const base = getAppBasePath();
+    return base === '/' ? `/${filename}` : `${base}${filename}`;
+  }
+
   /** Path to index.html (works on amplyopia.com and GitHub Pages /Amplyopia/) */
   function getAppIndexPath() {
-    const pathname = window.location.pathname || '/';
-    if (/index\.html?$/i.test(pathname)) return pathname;
-    const base = pathname.endsWith('/') ? pathname : `${pathname}/`;
-    return `${base}index.html`;
+    return getAppPagePath('index.html');
   }
 
   /** Choose Service page — Google OAuth should redirect here */
   function getServicesPath() {
-    return getAppIndexPath().replace(/index\.html?$/i, 'services.html');
+    return getAppPagePath('services.html');
   }
 
   /** Child profile setup page */
   function getProfileSetupPath() {
-    return getAppIndexPath().replace(/index\.html?$/i, 'profile-setup.html');
+    return getAppPagePath('profile-setup.html');
+  }
+
+  function getAppPageUrl(path) {
+    return `${window.location.origin}${path}`;
+  }
+
+  function getServicesUrl() {
+    return getAppPageUrl(getServicesPath());
+  }
+
+  function getProfileSetupUrl() {
+    return getAppPageUrl(getProfileSetupPath());
   }
 
   function getAuthRedirectUrl() {
-    return `${window.location.origin}${getServicesPath()}`;
+    return getServicesUrl();
   }
 
   function listAuthRedirectUrls() {
@@ -518,9 +544,12 @@ async function signInWithGoogle() {
     client,
     configured: !!client,
     readConfig,
+    getAppBasePath,
     getAppIndexPath,
     getServicesPath,
     getProfileSetupPath,
+    getServicesUrl,
+    getProfileSetupUrl,
     getAuthRedirectUrl,
     listAuthRedirectUrls,
     finishAuthRedirect,

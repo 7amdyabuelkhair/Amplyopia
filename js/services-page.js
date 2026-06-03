@@ -17,8 +17,8 @@
 
   function profileSetupUrl() {
     return (
-      window.SupabaseApp?.getProfileSetupPath?.() ||
-      new URL('profile-setup.html', window.location.href).pathname
+      window.SupabaseApp?.getProfileSetupUrl?.() ||
+      new URL('profile-setup.html', `${window.location.origin}/`).href
     );
   }
 

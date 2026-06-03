@@ -17,8 +17,8 @@
 
   function servicesUrl() {
     return (
-      window.SupabaseApp?.getServicesPath?.() ||
-      new URL('services.html', window.location.href).pathname
+      window.SupabaseApp?.getServicesUrl?.() ||
+      new URL('services.html', `${window.location.origin}/`).href
     );
   }
 
