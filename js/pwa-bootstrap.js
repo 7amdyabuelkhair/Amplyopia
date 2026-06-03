@@ -110,7 +110,7 @@
       if (session?.user?.id) window.PushClient?.subscribePush?.().catch(() => {});
     }
 
-    window.SupabaseApp?.onAuthStateChange?.(trySubscribePush);
+    window.SupabaseApp?.onAuthStateChange?.((_event, session) => trySubscribePush(session));
     window.SupabaseApp?.getSession?.().then(trySubscribePush);
   });
 

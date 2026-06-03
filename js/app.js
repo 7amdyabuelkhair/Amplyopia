@@ -123,9 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const reconsentError = document.getElementById('reconsent-error');
 
     let authMode = 'signin';
-    let authReady = false;
-    let activeUserId = null;
-    let signingOut = false;
     let pendingTermsAcceptedAt = null;
     let hasAcceptedTerms = false;
     let termsAcceptedAt = null;
@@ -213,39 +210,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function initWizardStep() {
-        if (isEditProfileMode()) return;
-        if (window.location.hash === '#services' || isProfileCompleteLocally()) {
-            goToServicesStep();
-            return;
-        }
-        showStep(1);
-    }
-
-    function handleAuthSession(session) {
-        if (!authReady) return;
-        const uid = session?.user?.id || null;
-        if (!uid && activeUserId && !signingOut) return;
-        activeUserId = uid;
-        hydrateProfileFromSupabase(session);
-        updateNavForSignedIn(!!uid);
+    function showSignedOutState() {
+        profileComplete = false;
+        showAuthUI();
+        goToSignInStep();
+        updateNavForSignedIn(false);
+        applyThemeFromStoredGender();
+        if (progressIndicator) progressIndicator.classList.remove('hidden');
     }
 
     async function hydrateProfileFromSupabase(session) {
         try {
             if (!session?.user?.id) {
-                if (!authReady) return;
-                showAuthUI();
-                goToSignInStep();
-                updateNavForSignedIn(false);
-                applyThemeFromStoredGender();
+                showSignedOutState();
                 return;
             }
 
             goToSignInStep();
             showProfileUI();
             updateNavForSignedIn(true);
-            activeUserId = session.user.id;
             if (profileError) profileError.textContent = '';
             if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
 
@@ -338,10 +321,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
         await hydrateProfileFromSupabase(session);
-        updateNavForSignedIn(!!session?.user?.id);
-        activeUserId = session?.user?.id || null;
-        authReady = true;
-        window.SupabaseApp?.onAuthStateChange?.(handleAuthSession);
+
+        window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
+            if (event === 'INITIAL_SESSION') return;
+            if (!sess?.user?.id) {
+                showSignedOutState();
+                return;
+            }
+            void hydrateProfileFromSupabase(sess);
+        });
     })();
 
     // Navbar user chip + sign-out
@@ -375,10 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     navSignoutBtn?.addEventListener('click', async () => {
-        signingOut = true;
-        activeUserId = null;
         await window.SupabaseApp?.signOut?.();
-        signingOut = false;
         localStorage.removeItem('userGender');
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
@@ -389,10 +374,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('theme-boy', 'theme-girl');
         document.body.classList.add('theme-guest');
         setInstructionImagesByGender();
-        if (progressIndicator) progressIndicator.classList.remove('hidden');
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        showSignedOutState();
         currentStep = 1;
         showStep(1);
-        updateNavForSignedIn(false);
     });
 
     googleBtn?.addEventListener('click', async () => {
@@ -426,8 +413,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 goToSignInStep();
                 if (signup?.session) {
                     await hydrateProfileFromSupabase(signup.session);
-                    updateNavForSignedIn(true);
-                    activeUserId = signup.session.user?.id || null;
                     if (authError) authError.textContent = '';
                 } else {
                     setAuthMode('signin');
@@ -439,9 +424,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const session = await window.SupabaseApp?.signInWithPassword?.(email, pass);
                 const active = session || (await window.SupabaseApp?.getSession?.());
+                if (!active?.user?.id) throw new Error('Sign in failed. Please try again.');
                 await hydrateProfileFromSupabase(active);
-                updateNavForSignedIn(!!active?.user?.id);
-                activeUserId = active?.user?.id || null;
+                if (authError) authError.textContent = '';
             }
         } catch (err) {
             goToSignInStep();
@@ -576,5 +561,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    initWizardStep();
+    // Default: instructions. Auth bootstrap moves to sign-in or services when session exists.
+    if (!isEditProfileMode() && !window.location.hash) {
+        showStep(1);
+    }
 });

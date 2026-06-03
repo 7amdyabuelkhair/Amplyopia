@@ -1,6 +1,6 @@
 {
-  "version": "1.1.5",
-  "build": 2026060315,
-  "releasedAt": "2026-06-03T15:00:00.000Z",
-  "notes": "Remove admin from main app; fix sign-in session handling."
+  "version": "1.1.6",
+  "build": 2026060316,
+  "releasedAt": "2026-06-03T16:00:00.000Z",
+  "notes": "Fix main site sign-in: remove stale localStorage skip and simplify auth session handling."
 }
