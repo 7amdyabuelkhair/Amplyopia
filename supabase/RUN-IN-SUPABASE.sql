@@ -164,3 +164,23 @@ create policy "notification_targets_insert_admin" on public.notification_targets
 drop policy if exists "push_subscriptions_select_admin" on public.push_subscriptions;
 create policy "push_subscriptions_select_admin" on public.push_subscriptions
   for select to authenticated using (public.is_admin());
+
+-- ---------- Auto-create empty profile when user signs up (Google / email) ----------
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, name, gender, birthdate, updated_at, created_at)
+  values (new.id, null, null, null, now(), now())
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();

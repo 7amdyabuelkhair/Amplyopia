@@ -1,8 +1,10 @@
 /**
  * Sign-in + child profile + routing (step 2 → services).
- * Loaded after supabase.js; initialized from app.js.
  */
 (() => {
+  const UID_KEY = 'amplyopia_last_user_id';
+  const EXPECT_PROFILE_KEY = 'amplyopia_expect_profile';
+
   function profileIsComplete(profile) {
     const name = profile?.name && String(profile.name).trim();
     const gender = profile?.gender;
@@ -14,7 +16,7 @@
   }
 
   function cacheProfile(profile) {
-    if (!profile) return;
+    if (!profile || !profileIsComplete(profile)) return;
     try {
       if (profile.name) localStorage.setItem('userName', String(profile.name));
       if (profile.gender) localStorage.setItem('userGender', String(profile.gender));
@@ -24,16 +26,31 @@
     } catch (_) {}
   }
 
+  function clearLocalProfileCache() {
+    try {
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userGender');
+      localStorage.removeItem('userBirthdate');
+      localStorage.removeItem('userAge');
+    } catch (_) {}
+  }
+
+  function syncUserIdentity(session) {
+    const uid = session?.user?.id;
+    if (!uid) return;
+    try {
+      const prev = localStorage.getItem(UID_KEY);
+      if (prev && prev !== uid) clearLocalProfileCache();
+      localStorage.setItem(UID_KEY, uid);
+    } catch (_) {}
+  }
+
   window.AuthWizard = {
     profileIsComplete,
     cacheProfile,
 
-    /**
-     * @param {object} ctx - DOM refs and callbacks from app.js
-     */
     init(ctx) {
       const {
-        showStep,
         goServices,
         goSignInStep,
         showInstructions,
@@ -68,11 +85,15 @@
 
       let authMode = 'signin';
       let pendingTermsAcceptedAt = null;
+      let routingUser = false;
+      let lastRoutedUserId = null;
 
       function setStep2Copy(mode) {
         if (mode === 'profile') {
-          if (step2Title) step2Title.textContent = 'Child profile';
-          if (step2Subtitle) step2Subtitle.textContent = 'Enter name, gender, and birthday to continue.';
+          if (step2Title) step2Title.textContent = 'Set up child profile';
+          if (step2Subtitle) {
+            step2Subtitle.textContent = 'Choose boy or girl, enter the child name and birthday.';
+          }
         } else {
           if (step2Title) step2Title.textContent = 'Sign in';
           if (step2Subtitle) step2Subtitle.textContent = 'Sign in with Google or email to continue.';
@@ -91,11 +112,16 @@
         profileCard?.classList.remove('hidden');
         setStep2Copy('profile');
         goSignInStep();
+        setProfileComplete(false);
+        try {
+          sessionStorage.removeItem(EXPECT_PROFILE_KEY);
+        } catch (_) {}
         if (profileWelcome) {
           profileWelcome.textContent = email
-            ? `Signed in as ${email}. Complete the child profile below.`
-            : 'Complete the child profile below.';
+            ? `Signed in as ${email}. Set up the child profile to continue.`
+            : 'Set up the child profile to continue.';
         }
+        profileCard?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
       }
 
       function fillProfileForm(profile) {
@@ -108,7 +134,15 @@
         }
       }
 
-      async function routeSignedInUser(session) {
+      function resetProfileForm() {
+        if (profileName) profileName.value = '';
+        if (profileBirthdate) profileBirthdate.value = '';
+        profileForm?.querySelectorAll('input[name="gender"]').forEach((el) => {
+          el.checked = false;
+        });
+      }
+
+      async function routeSignedInUser(session, options = {}) {
         if (!session?.user?.id) {
           showLoginForm();
           goSignInStep();
@@ -116,40 +150,54 @@
           return;
         }
 
-        updateNav(true);
-        if (authError) authError.textContent = '';
-        if (profileError) profileError.textContent = '';
+        if (routingUser && lastRoutedUserId === session.user.id && !options.force) return;
+        routingUser = true;
+        lastRoutedUserId = session.user.id;
 
-        let profile = null;
         try {
-          profile = await window.SupabaseApp.getProfile(session.user.id);
-        } catch (err) {
-          console.warn('getProfile:', err);
-          if (profileError) {
-            profileError.textContent =
-              err?.message || 'Could not load profile. You can still save the form below.';
-          }
-        }
+          syncUserIdentity(session);
+          updateNav(true);
+          if (authError) authError.textContent = '';
+          if (profileError) profileError.textContent = '';
 
-        fillProfileForm(profile);
-
-        if (profile?.gender) {
-          window.Profile?.applyThemeFromGender?.(profile.gender);
+          let profile = null;
           try {
-            localStorage.setItem('userGender', String(profile.gender));
-          } catch (_) {}
-          document.body.classList.remove('theme-guest');
-        }
+            profile = await window.SupabaseApp.getProfile(session.user.id);
+          } catch (err) {
+            console.warn('getProfile:', err);
+            if (profileError) {
+              profileError.textContent =
+                err?.message || 'Could not load profile. Fill the form below and save.';
+            }
+          }
 
-        if (profileIsComplete(profile)) {
+          const complete = profileIsComplete(profile);
+
+          if (!complete) {
+            clearLocalProfileCache();
+            resetProfileForm();
+            fillProfileForm(profile);
+            showProfileForm(session.user.email);
+            return;
+          }
+
+          fillProfileForm(profile);
+          if (profile?.gender) {
+            window.Profile?.applyThemeFromGender?.(profile.gender);
+            try {
+              localStorage.setItem('userGender', String(profile.gender));
+            } catch (_) {}
+            document.body.classList.remove('theme-guest');
+          }
           cacheProfile(profile);
           setProfileComplete(true);
+          try {
+            sessionStorage.removeItem(EXPECT_PROFILE_KEY);
+          } catch (_) {}
           goServices();
-          return;
+        } finally {
+          routingUser = false;
         }
-
-        setProfileComplete(false);
-        showProfileForm(session.user.email);
       }
 
       function setAuthMode(mode) {
@@ -175,6 +223,9 @@
       googleBtn?.addEventListener('click', async () => {
         try {
           if (authError) authError.textContent = '';
+          try {
+            sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
+          } catch (_) {}
           await window.SupabaseApp.signInWithGoogle();
         } catch (e) {
           if (authError) authError.textContent = e?.message || 'Google sign-in failed.';
@@ -199,9 +250,12 @@
               return;
             }
             pendingTermsAcceptedAt = new Date().toISOString();
+            try {
+              sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
+            } catch (_) {}
             const signup = await window.SupabaseApp.signUp(email, pass);
             if (signup?.session) {
-              await routeSignedInUser(signup.session);
+              await routeSignedInUser(signup.session, { force: true });
             } else {
               setAuthMode('signin');
               authError.textContent =
@@ -210,7 +264,7 @@
           } else {
             const session = await window.SupabaseApp.signInWithPassword(email, pass);
             if (!session?.user?.id) throw new Error('Sign in failed. Try again.');
-            await routeSignedInUser(session);
+            await routeSignedInUser(session, { force: true });
           }
         } catch (err) {
           showLoginForm();
@@ -251,6 +305,9 @@
           document.body.classList.remove('theme-guest');
           ctx.onProfileSaved?.();
           setProfileComplete(true);
+          try {
+            sessionStorage.removeItem(EXPECT_PROFILE_KEY);
+          } catch (_) {}
           goServices();
         } catch (err) {
           if (profileError) profileError.textContent = err?.message || 'Could not save profile.';
@@ -265,47 +322,69 @@
         updateNav(false);
       });
 
-      async function bootstrap() {
-        if (!window.supabase?.createClient) {
-          authError.textContent = 'Auth library failed to load. Clear cache and reload.';
-          goSignInStep();
-          return;
-        }
-        if (!window.SupabaseApp?.configured) {
-          authError.textContent = 'Add SUPABASE_URL and SUPABASE_ANON_KEY in js/supabase-config.js';
-          showInstructions();
-          return;
-        }
-
-        goSignInStep();
-        const redirect = await window.SupabaseApp.finishAuthRedirect();
-        if (redirect?.error && authError) {
-          authError.textContent = redirect.error.message;
-        }
-
-        const session = redirect?.session || (await window.SupabaseApp.getSession());
-        if (session?.user?.id) {
-          await routeSignedInUser(session);
-        } else {
-          showLoginForm();
-          if (window.location.hash === '#services') {
-            goSignInStep();
-          } else {
-            showInstructions();
-          }
-        }
-
+      function listenForAuth() {
         window.SupabaseApp.onAuthStateChange((event, sess) => {
           if (event === 'SIGNED_OUT' || !sess?.user?.id) {
+            lastRoutedUserId = null;
             showLoginForm();
             updateNav(false);
             if (window.location.hash !== '#services') showInstructions();
             return;
           }
-          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            void routeSignedInUser(sess);
+          if (event === 'SIGNED_IN') {
+            void routeSignedInUser(sess, { force: true });
           }
         });
+      }
+
+      async function bootstrap() {
+        if (!window.supabase?.createClient) {
+          if (authError) authError.textContent = 'Auth library failed to load. Clear cache and reload.';
+          goSignInStep();
+          return;
+        }
+        if (!window.SupabaseApp?.configured) {
+          if (authError) {
+            authError.textContent = 'Add SUPABASE_URL and SUPABASE_ANON_KEY in js/supabase-config.js';
+          }
+          showInstructions();
+          return;
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasOAuthCode = urlParams.get('code');
+        const hasOAuthError = urlParams.get('error');
+
+        if (hasOAuthCode || hasOAuthError) {
+          goSignInStep();
+          const redirect = await window.SupabaseApp.finishAuthRedirect();
+          if (redirect?.error && authError) {
+            authError.textContent = redirect.error.message;
+            showLoginForm();
+            listenForAuth();
+            return;
+          }
+          const session = redirect?.session || (await window.SupabaseApp.getSession());
+          if (session?.user?.id) {
+            try {
+              sessionStorage.setItem(EXPECT_PROFILE_KEY, '1');
+            } catch (_) {}
+            await routeSignedInUser(session, { force: true });
+            listenForAuth();
+            return;
+          }
+        }
+
+        const session = await window.SupabaseApp.getSession();
+        if (session?.user?.id) {
+          await routeSignedInUser(session);
+        } else {
+          showLoginForm();
+          if (window.location.hash === '#services') goSignInStep();
+          else showInstructions();
+        }
+
+        listenForAuth();
       }
 
       bootstrap();
@@ -317,11 +396,7 @@
         tryGoServices: async () => {
           const session = await window.SupabaseApp.getSession();
           if (!session?.user?.id) return false;
-          if (getProfileComplete()) {
-            goServices();
-            return true;
-          }
-          await routeSignedInUser(session);
+          await routeSignedInUser(session, { force: true });
           return getProfileComplete();
         }
       };

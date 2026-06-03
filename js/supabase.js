@@ -211,7 +211,7 @@
         )
       };
     }
-    return { session: data.session, error: null };
+    return { session: data.session, error: null, fromOAuth: true };
   }
 
   async function getSession() {
@@ -242,6 +242,7 @@ async function signInWithGoogle() {
   const redirectTo = getAuthRedirectUrl();
   try {
     sessionStorage.setItem('amplyopia_oauth_return', redirectTo);
+    sessionStorage.setItem('amplyopia_expect_profile', '1');
   } catch (_) {}
 
   const { error } = await client.auth.signInWithOAuth({
