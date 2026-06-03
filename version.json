@@ -1,6 +1,6 @@
 {
-  "version": "1.2.1",
-  "build": 2026060321,
-  "releasedAt": "2026-06-03T21:00:00.000Z",
-  "notes": "Fix staying on sign-in page after successful login; route to services or child profile."
+  "version": "2.0.0",
+  "build": 2026060322,
+  "releasedAt": "2026-06-03T22:00:00.000Z",
+  "notes": "Rebuild sign-in flow (auth-wizard.js) and consolidated Supabase SQL (RUN-IN-SUPABASE.sql)."
 }

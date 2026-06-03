@@ -116,7 +116,7 @@
   }
 
   function getAuthRedirectUrl() {
-    return `${window.location.origin}${getAppIndexPath()}#services`;
+    return `${window.location.origin}${getAppIndexPath()}`;
   }
 
   function listAuthRedirectUrls() {
@@ -127,11 +127,8 @@
       `${origin}/`,
       `${origin}/index.html`,
       `${origin}${indexPath}`,
-      `${origin}/index.html#services`,
-      `${origin}${indexPath}#services`,
       `${origin}/Amplyopia/`,
-      `${origin}/Amplyopia/index.html`,
-      `${origin}/Amplyopia/index.html#services`
+      `${origin}/Amplyopia/index.html`
     ];
     return [...new Set([primary, ...extras])];
   }

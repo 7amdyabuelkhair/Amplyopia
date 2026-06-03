@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-    // Initialize wizard
     let currentStep = 1;
     const totalSteps = 3;
     let profileComplete = false;
@@ -35,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
             img2.src = 'images/boy-instruction-2.jpg';
             img3.src = 'images/boy-instruction-3.jpg';
         } else {
-            // Guest (yellow) instruction images order (requested)
             img1.src = 'images/boy-instruction-1.jpg';
             img2.src = 'images/girl-instruction-3.png';
             img3.src = 'images/boy-instruction-2.jpg';
@@ -45,505 +43,54 @@ document.addEventListener('DOMContentLoaded', () => {
     applyThemeFromStoredGender();
     setInstructionImagesByGender();
 
-    // Update progress indicator
     function updateProgress(step) {
         document.querySelectorAll('.progress-step').forEach((el, index) => {
-            if (index + 1 <= step) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
+            el.classList.toggle('active', index + 1 <= step);
         });
     }
 
-    // Show step function
     function showStep(step) {
-        // Hide all steps
-        document.querySelectorAll('.wizard-step').forEach(el => {
-            el.classList.remove('active');
-        });
-        
-        // Show current step
+        document.querySelectorAll('.wizard-step').forEach((el) => el.classList.remove('active'));
         const stepEl = document.getElementById(`step-${step}`);
         if (stepEl) {
             stepEl.classList.add('active');
             updateProgress(step);
         }
+        currentStep = step;
     }
 
-    function wantsSignInQuery() {
-        try {
-            return new URLSearchParams(window.location.search).get('signin') === '1';
-        } catch (_) {
-            return false;
-        }
-    }
-
-    function wantsServicesHash() {
-        return window.location.hash === '#services';
-    }
-
-    async function tryGoToServicesIfReady() {
-        const session = await window.SupabaseApp?.getSession?.();
-        if (!session?.user?.id) return false;
-        if (profileComplete || isProfileCompleteLocally()) {
-            if (!profileComplete && isProfileCompleteLocally()) {
-                profileComplete = true;
-            }
-            goToServicesStep();
-            return true;
-        }
-        return false;
-    }
-
-    // Make functions global
-    window.nextStep = async function() {
-        if (currentStep === 1) {
-            const session = await window.SupabaseApp?.getSession?.();
-            if (session?.user?.id) {
-                await hydrateProfileFromSupabase(session);
-                return;
-            }
-        }
-        if (currentStep === 2) {
-            if (profileComplete) {
-                goToServicesStep();
-                return;
-            }
-            const session = await window.SupabaseApp?.getSession?.();
-            if (session?.user?.id) {
-                if (await tryGoToServicesIfReady()) return;
-                showProfileUI();
-                return;
-            }
-            return;
-        }
-        if (currentStep < totalSteps) {
-            currentStep++;
-            showStep(currentStep);
-        }
-    };
-
-    window.prevStep = function() {
-        if (currentStep === 3) {
-            if (profileComplete) return;
-            currentStep = 2;
-            showStep(2);
-            if (progressIndicator) progressIndicator.classList.remove('hidden');
-            return;
-        }
-        if (currentStep > 1) {
-            currentStep--;
-            showStep(currentStep);
-        }
-    };
-
-    // --- Step 2: Supabase auth + child profile (name + gender + birthdate) ---
-    const authCard = document.getElementById('auth-card');
-    const profileCard = document.getElementById('profile-card');
-    const authError = document.getElementById('auth-error');
-    const profileError = document.getElementById('profile-error');
-    const profileWelcome = document.getElementById('profile-welcome');
-
-    const tabSignIn = document.getElementById('auth-tab-signin');
-    const tabSignUp = document.getElementById('auth-tab-signup');
-    const authEmailForm = document.getElementById('auth-email-form');
-    const authEmail = document.getElementById('auth-email');
-    const authPassword = document.getElementById('auth-password');
-    const authEmailSubmit = document.getElementById('auth-email-submit');
-    const googleBtn = document.getElementById('auth-google-btn');
-    const signupConsentGroup = document.getElementById('signup-consent-group');
-    const signupTermsCheckbox = document.getElementById('signup-terms-checkbox');
-    const signupConsentError = document.getElementById('signup-consent-error');
-
-    const profileForm = document.getElementById('profile-form');
-    const profileName = document.getElementById('profile-name');
-    const profileGender = document.getElementById('profile-gender');
-    const profileBirthdate = document.getElementById('profile-birthdate');
-    const signOutBtn = document.getElementById('auth-signout-btn');
-    const reconsentModal = document.getElementById('terms-reconsent-modal');
-    const reconsentCheckbox = document.getElementById('reconsent-checkbox');
-    const reconsentAcceptBtn = document.getElementById('reconsent-accept-btn');
-    const reconsentError = document.getElementById('reconsent-error');
-
-    let authMode = 'signin';
-    let pendingTermsAcceptedAt = null;
-    let hasAcceptedTerms = false;
-    let termsAcceptedAt = null;
-
-    function setAuthMode(mode) {
-        authMode = mode === 'signup' ? 'signup' : 'signin';
-        if (tabSignIn && tabSignUp) {
-            tabSignIn.classList.toggle('active', authMode === 'signin');
-            tabSignUp.classList.toggle('active', authMode === 'signup');
-            tabSignIn.setAttribute('aria-selected', String(authMode === 'signin'));
-            tabSignUp.setAttribute('aria-selected', String(authMode === 'signup'));
-        }
-        if (authPassword) {
-            authPassword.autocomplete = authMode === 'signup' ? 'new-password' : 'current-password';
-        }
-        if (authEmailSubmit) {
-            authEmailSubmit.firstChild && (authEmailSubmit.firstChild.nodeValue = authMode === 'signup' ? 'Create account ' : 'Continue ');
-        }
-        if (signupConsentGroup) signupConsentGroup.classList.toggle('hidden', authMode !== 'signup');
-        if (signupTermsCheckbox) signupTermsCheckbox.required = authMode === 'signup';
-        if (signupConsentError) signupConsentError.textContent = '';
-        if (authError) authError.textContent = '';
-    }
-
-    tabSignIn?.addEventListener('click', () => setAuthMode('signin'));
-    tabSignUp?.addEventListener('click', () => setAuthMode('signup'));
-    setAuthMode('signin');
-
-    function showAuthUI() {
-        authCard?.classList.remove('hidden');
-        profileCard?.classList.add('hidden');
-        profileComplete = false;
-        updateStep2Header('signin');
-    }
-
-    function showProfileUI() {
-        authCard?.classList.add('hidden');
-        profileCard?.classList.remove('hidden');
-        updateStep2Header('profile');
-    }
-
-    function setTermsState({ accepted, acceptedAt }) {
-        hasAcceptedTerms = !!accepted;
-        termsAcceptedAt = acceptedAt || null;
-        if (hasAcceptedTerms) {
-            return;
-        }
-    }
-
-    function showReconsentModal(show) {
-        if (!reconsentModal) return;
-        reconsentModal.classList.toggle('hidden', !show);
-    }
-
-    function isEditProfileMode() {
-        try {
-            const q = new URLSearchParams(window.location.search);
-            return q.get('editProfile') === '1';
-        } catch (_) {
-            return false;
-        }
-    }
-
-    function goToSignInStep() {
-        currentStep = 2;
+    function goSignInStep() {
         showStep(2);
-        if (progressIndicator) progressIndicator.classList.remove('hidden');
+        progressIndicator?.classList.remove('hidden');
     }
 
-    function isProfileCompleteLocally() {
-        const name = localStorage.getItem('userName');
-        const gender = localStorage.getItem('userGender');
-        const birthdate = localStorage.getItem('userBirthdate');
-        return !!(name && gender && birthdate);
-    }
-
-    function isProfileComplete(profile) {
-        const hasName = !!(profile?.name && String(profile.name).trim());
-        const hasGender = !!(profile?.gender && (profile.gender === 'boy' || profile.gender === 'girl'));
-        const hasBirthdate = !!(profile?.birthdate && String(profile.birthdate).trim());
-        let computedAge = window.Profile?.computeAgeFromBirthdate?.(profile?.birthdate) ?? null;
-        if (computedAge == null && profile?.age != null) {
-            const legacyAge = Number(profile.age);
-            if (!Number.isNaN(legacyAge) && legacyAge >= 0 && legacyAge <= 120) computedAge = legacyAge;
-        }
-        const hasAge = typeof computedAge === 'number' && computedAge >= 0 && computedAge <= 120;
-        const complete = hasName && hasGender && hasAge && (hasBirthdate || hasAge);
-        return { complete, computedAge, hasName, hasGender, hasBirthdate };
-    }
-
-    const step2Title = document.getElementById('step-2-title');
-    const step2Subtitle = document.getElementById('step-2-subtitle');
-
-    function updateStep2Header(mode) {
-        if (mode === 'profile') {
-            if (step2Title) step2Title.textContent = 'Child profile';
-            if (step2Subtitle) step2Subtitle.textContent = 'Enter the child name, gender, and birthday to continue.';
-        } else {
-            if (step2Title) step2Title.textContent = 'Sign in to Continue';
-            if (step2Subtitle) step2Subtitle.textContent = 'Sign in first, then we’ll ask for the child info';
-        }
-    }
-
-    async function loadProfileSafe(userId) {
-        try {
-            const timeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile load timed out')), 10000)
-            );
-            return await Promise.race([window.SupabaseApp?.getProfile?.(userId), timeout]);
-        } catch (e) {
-            console.warn('Profile load failed:', e);
-            return null;
-        }
-    }
-
-    /** After sign-in, always leave the login form and go to services or child profile. */
-    async function ensureRoutedAfterAuth(session) {
-        if (!session?.user?.id) return;
-        if (profileComplete || currentStep === 3) {
-            goToServicesStep();
-            return;
-        }
-        if (isProfileCompleteLocally()) {
-            profileComplete = true;
-            goToServicesStep();
-            return;
-        }
-        goToSignInStep();
-        showProfileUI();
-        updateStep2Header('profile');
-        if (profileWelcome) {
-            profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}. Complete the child profile below.`;
-        }
-    }
-
-    function goToProfileStep() {
-        profileComplete = false;
-        goToSignInStep();
-        showProfileUI();
-        if (profileWelcome) {
-            profileWelcome.textContent = 'Please enter the child name, gender, and birthday to continue.';
-        }
-    }
-
-    function goToServicesStep() {
+    function goServices() {
         profileComplete = true;
-        currentStep = 3;
         showStep(3);
-        if (progressIndicator) progressIndicator.classList.add('hidden');
+        progressIndicator?.classList.add('hidden');
         const prevOnServices = document.querySelector('#step-3 .btn-prev');
-        if (prevOnServices) prevOnServices.classList.toggle('hidden', profileComplete);
-        const indexPath = window.SupabaseApp?.getAppIndexPath?.() || window.location.pathname;
-        if (window.history.replaceState) {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                params.delete('signin');
-                const qs = params.toString();
-                const suffix = qs ? `?${qs}` : '';
-                window.history.replaceState(null, '', `${indexPath}${suffix}#services`);
-            } catch (_) {
-                window.history.replaceState(null, '', `${indexPath}#services`);
-            }
-        }
+        if (prevOnServices) prevOnServices.classList.add('hidden');
+        const indexPath = window.SupabaseApp?.getAppIndexPath?.() || 'index.html';
         try {
-            localStorage.setItem('amplyopia_onboarded', '1');
+            window.history.replaceState(null, '', `${indexPath}#services`);
         } catch (_) {}
     }
 
-    function showSignedOutState() {
-        profileComplete = false;
-        showAuthUI();
-        goToSignInStep();
-        updateNavForSignedIn(false);
-        applyThemeFromStoredGender();
-        if (progressIndicator) progressIndicator.classList.remove('hidden');
-    }
-
-    async function hydrateProfileFromSupabase(session) {
-        try {
-            if (!session?.user?.id) {
-                showSignedOutState();
-                return;
-            }
-
-            updateNavForSignedIn(true);
-            if (profileError) profileError.textContent = '';
-            if (authError) authError.textContent = '';
-
-            let profile = null;
-            let termsConsent = null;
-            try {
-                profile = await loadProfileSafe(session.user.id);
-            } catch (profileLoadErr) {
-                if (profileError) {
-                    profileError.textContent =
-                        profileLoadErr?.message || 'Signed in, but profile could not be loaded. You can still fill the form below.';
-                }
-            }
-            try {
-                termsConsent = await window.SupabaseApp?.getTermsConsent?.(session.user.id);
-            } catch (_) {
-                /* terms table optional until SQL is applied */
-            }
-            setTermsState({
-                accepted: termsConsent?.accepted_terms === true,
-                acceptedAt: termsConsent?.accepted_at || null
-            });
-
-            if (profile?.name) profileName.value = profile.name;
-            if (profile?.gender) {
-                const genderRadio = profileForm?.querySelector(
-                    `input[name="gender"][value="${String(profile.gender)}"]`
-                );
-                if (genderRadio) genderRadio.checked = true;
-            }
-            if (profile?.birthdate && profileBirthdate) profileBirthdate.value = String(profile.birthdate);
-
-            let check = isProfileComplete(profile);
-
-            if (!check.complete && isProfileCompleteLocally()) {
-                check = {
-                    complete: true,
-                    computedAge: window.Profile?.computeAgeFromBirthdate?.(
-                        localStorage.getItem('userBirthdate')
-                    ),
-                    hasName: true,
-                    hasGender: true,
-                    hasBirthdate: true
-                };
-                if (!profile?.name) profile = profile || {};
-                profile.name = profile.name || localStorage.getItem('userName');
-                profile.gender = profile.gender || localStorage.getItem('userGender');
-                profile.birthdate = profile.birthdate || localStorage.getItem('userBirthdate');
-            }
-
-            if (check.hasGender && profile?.gender) {
-                window.Profile?.applyThemeFromGender?.(profile.gender);
-                localStorage.setItem('userGender', String(profile.gender));
-                document.body.classList.remove('theme-guest');
-            }
-
-            if (check.complete) {
-                localStorage.setItem('userName', String(profile.name));
-                localStorage.setItem('userBirthdate', String(profile.birthdate));
-                localStorage.setItem('userAge', String(check.computedAge));
-                setInstructionImagesByGender();
-                if (isEditProfileMode()) {
-                    profileComplete = true;
-                    if (progressIndicator) progressIndicator.classList.remove('hidden');
-                    currentStep = 2;
-                    showStep(2);
-                    showProfileUI();
-                    if (profileWelcome) {
-                        profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
-                    }
-                } else {
-                    goToServicesStep();
-                }
-            } else {
-                if (profileWelcome) {
-                    profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}. Complete the child profile below.`;
-                }
-                goToProfileStep();
-                if (!pendingTermsAcceptedAt) pendingTermsAcceptedAt = new Date().toISOString();
-            }
-
-            const isExistingUser = check.hasName || check.hasGender || check.hasBirthdate;
-            if (isExistingUser && !hasAcceptedTerms) showReconsentModal(true);
-
-            if (!check.complete && !profileComplete && currentStep !== 3) {
-                await ensureRoutedAfterAuth(session);
-            }
-        } catch (e) {
-            goToProfileStep();
-            if (profileError) profileError.textContent = e?.message || 'Failed to load your profile.';
-            await ensureRoutedAfterAuth(session);
-        }
-    }
-
-    function showGuestInstructionsStep() {
-        if (isEditProfileMode()) return;
-        currentStep = 1;
+    function showInstructions() {
         showStep(1);
-        if (progressIndicator) progressIndicator.classList.remove('hidden');
+        progressIndicator?.classList.remove('hidden');
     }
 
-    // Initial session check + listen to changes (OAuth redirect returns here)
-    (async () => {
-        try {
-            if (!window.supabase?.createClient) {
-                if (authError) {
-                    authError.textContent =
-                        'App failed to load (auth library missing). Clear cache and reload, or disable Tracking Prevention for this site.';
-                }
-                goToSignInStep();
-                return;
-            }
-
-            if (!window.SupabaseApp?.configured) {
-                if (authError) {
-                    authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
-                }
-                showGuestInstructionsStep();
-                return;
-            }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const oauthReturn = urlParams.get('code') || urlParams.get('error');
-            if (oauthReturn || wantsSignInQuery()) {
-                goToSignInStep();
-            }
-
-            const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
-            if (redirect?.error && authError) {
-                authError.textContent = redirect.error.message || 'Google sign-in failed.';
-            }
-            const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
-
-            if (session?.user?.id) {
-                await hydrateProfileFromSupabase(session);
-            } else {
-                showSignedOutState();
-                if (wantsServicesHash() || wantsSignInQuery() || oauthReturn) {
-                    goToSignInStep();
-                } else if (!isEditProfileMode()) {
-                    try {
-                        if (localStorage.getItem('amplyopia_onboarded') === '1') {
-                            goToSignInStep();
-                        } else {
-                            showGuestInstructionsStep();
-                        }
-                    } catch (_) {
-                        showGuestInstructionsStep();
-                    }
-                }
-            }
-
-            window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
-                if (event === 'SIGNED_OUT' || !sess?.user?.id) {
-                    showSignedOutState();
-                    if (!wantsServicesHash() && !wantsSignInQuery() && !isEditProfileMode()) {
-                        showGuestInstructionsStep();
-                    }
-                    return;
-                }
-                if (
-                    event === 'INITIAL_SESSION' ||
-                    event === 'SIGNED_IN' ||
-                    event === 'TOKEN_REFRESHED' ||
-                    event === 'USER_UPDATED'
-                ) {
-                    void hydrateProfileFromSupabase(sess);
-                }
-            });
-        } catch (err) {
-            console.error('App bootstrap failed:', err);
-            if (authError) {
-                authError.textContent =
-                    err?.message ||
-                    'Could not start the app. Try clearing site data or allow storage for amplyopia.com in Edge settings.';
-            }
-            goToSignInStep();
-        }
-    })();
-
-    // Navbar user chip + sign-out
     const userChip = document.getElementById('user-chip');
     const userChipName = document.getElementById('user-chip-name');
     const userChipAvatar = document.getElementById('user-chip-avatar');
     const navSignoutBtn = document.getElementById('nav-signout-btn');
     const navDashboardLink = document.getElementById('nav-dashboard-link');
 
-    function updateNavForSignedIn(isSignedIn) {
-        if (navSignoutBtn) navSignoutBtn.classList.toggle('hidden', !isSignedIn);
-        if (navDashboardLink) navDashboardLink.classList.toggle('hidden', !isSignedIn);
-        if (userChip) userChip.classList.toggle('hidden', !isSignedIn);
-
+    function updateNav(isSignedIn) {
+        navSignoutBtn?.classList.toggle('hidden', !isSignedIn);
+        navDashboardLink?.classList.toggle('hidden', !isSignedIn);
+        userChip?.classList.toggle('hidden', !isSignedIn);
         if (isSignedIn) {
             const nm = localStorage.getItem('userName') || 'Dashboard';
             const gender = localStorage.getItem('userGender');
@@ -555,212 +102,109 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    navSignoutBtn?.addEventListener('click', async () => {
-        await window.SupabaseApp?.signOut?.();
+    function clearLocalUser() {
         localStorage.removeItem('userGender');
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
         localStorage.removeItem('userName');
-        localStorage.removeItem('amplyopia_onboarded');
-        hasAcceptedTerms = false;
-        termsAcceptedAt = null;
+    }
+
+    let authApi = null;
+
+    window.nextStep = async function () {
+        if (currentStep === 1) {
+            const session = await window.SupabaseApp?.getSession?.();
+            if (session?.user?.id) {
+                await authApi?.routeSignedInUser?.(session);
+                return;
+            }
+            goSignInStep();
+            return;
+        }
+        if (currentStep === 2) {
+            const session = await window.SupabaseApp?.getSession?.();
+            if (session?.user?.id) {
+                await authApi?.routeSignedInUser?.(session);
+                return;
+            }
+        }
+        if (currentStep < totalSteps) showStep(currentStep + 1);
+    };
+
+    window.prevStep = function () {
+        if (currentStep === 3 && profileComplete) return;
+        if (currentStep > 1) showStep(currentStep - 1);
+    };
+
+    authApi = window.AuthWizard.init({
+        showStep,
+        goServices,
+        goSignInStep,
+        showInstructions,
+        updateNav,
+        setProfileComplete: (v) => {
+            profileComplete = !!v;
+        },
+        getProfileComplete: () => profileComplete,
+        onProfileSaved: () => setInstructionImagesByGender(),
+        onSignOut: () => {
+            clearLocalUser();
+            window.Branding?.applyFromGender?.(null);
+            document.body.classList.remove('theme-boy', 'theme-girl');
+            document.body.classList.add('theme-guest');
+            setInstructionImagesByGender();
+            showInstructions();
+        }
+    });
+
+    navSignoutBtn?.addEventListener('click', async () => {
+        await window.SupabaseApp?.signOut?.();
+        clearLocalUser();
         window.Branding?.applyFromGender?.(null);
         document.body.classList.remove('theme-boy', 'theme-girl');
         document.body.classList.add('theme-guest');
         setInstructionImagesByGender();
-        if (window.history.replaceState) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        showSignedOutState();
-        currentStep = 1;
-        showStep(1);
+        authApi?.showLoginForm?.();
+        updateNav(false);
+        showInstructions();
     });
 
-    googleBtn?.addEventListener('click', async () => {
-        try {
-            if (authError) authError.textContent = '';
-            await window.SupabaseApp?.signInWithGoogle?.();
-        } catch (e) {
-            if (authError) authError.textContent = e?.message || 'Google sign-in failed.';
-        }
+    document.querySelector('.menu-toggle')?.addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        const nav = document.getElementById('site-nav');
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!open));
+        nav?.classList.toggle('active');
     });
 
-    authEmailForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitBtn = authEmailSubmit;
-        try {
-            if (authError) authError.textContent = '';
-            if (signupConsentError) signupConsentError.textContent = '';
-            const email = (authEmail?.value || '').trim();
-            const pass = authPassword?.value || '';
-            if (!email || !pass) throw new Error('Please enter email and password.');
-            if (pass.length < 6) throw new Error('Password must be at least 6 characters.');
-            if (submitBtn) submitBtn.disabled = true;
-
-            if (authMode === 'signup') {
-                if (!signupTermsCheckbox?.checked) {
-                    if (signupConsentError) signupConsentError.textContent = 'You must agree to the Terms & Conditions and Privacy Policy to create an account.';
-                    return;
-                }
-                pendingTermsAcceptedAt = new Date().toISOString();
-                const signup = await window.SupabaseApp?.signUp?.(email, pass);
-                goToSignInStep();
-                if (signup?.session) {
-                    await hydrateProfileFromSupabase(signup.session);
-                    await ensureRoutedAfterAuth(signup.session);
-                    if (authError) authError.textContent = '';
-                } else {
-                    setAuthMode('signin');
-                    if (authError) {
-                        authError.textContent =
-                            'Account created! Check your email to confirm, then sign in with the same email and password.';
-                    }
-                }
-            } else {
-                const session = await window.SupabaseApp?.signInWithPassword?.(email, pass);
-                const active = session || (await window.SupabaseApp?.getSession?.());
-                if (!active?.user?.id) throw new Error('Sign in failed. Please try again.');
-                await hydrateProfileFromSupabase(active);
-                await ensureRoutedAfterAuth(active);
-                if (authError) authError.textContent = '';
-            }
-        } catch (err) {
-            showAuthUI();
-            goToSignInStep();
-            if (authError) authError.textContent = err?.message || 'Email sign-in failed.';
-        } finally {
-            if (submitBtn) submitBtn.disabled = false;
-        }
-    });
-
-    signOutBtn?.addEventListener('click', async () => {
-        await window.SupabaseApp?.signOut?.();
-        localStorage.removeItem('userGender');
-        localStorage.removeItem('amplyopia_onboarded');
-        hasAcceptedTerms = false;
-        termsAcceptedAt = null;
-        window.Branding?.applyFromGender?.(null);
-        showAuthUI();
-    });
-
-    profileForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            if (profileError) profileError.textContent = '';
-            const session = await window.SupabaseApp?.getSession?.();
-            const uid = session?.user?.id;
-            if (!uid) throw new Error('Please sign in first.');
-
-            const name = (profileName?.value || '').trim();
-            const gender = String(profileForm?.querySelector('input[name="gender"]:checked')?.value || '').toLowerCase();
-            const birthdate = String(profileBirthdate?.value || '').trim();
-            if (!name) throw new Error('Please enter your name.');
-            if (gender !== 'boy' && gender !== 'girl') throw new Error('Please choose boy or girl.');
-            if (!birthdate) throw new Error('Please enter the child birthday.');
-
-            const computedAge = window.Profile?.computeAgeFromBirthdate?.(birthdate);
-            if (typeof computedAge !== 'number' || computedAge < 0 || computedAge > 120) {
-                throw new Error('Birthday is not valid.');
-            }
-
-            const acceptedAt = pendingTermsAcceptedAt || termsAcceptedAt || new Date().toISOString();
-            const saved = await window.SupabaseApp?.upsertProfile?.({
-                id: uid,
-                name,
-                gender,
-                birthdate
-            });
-            try {
-                await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
-            } catch (_) {
-                /* optional until user_terms_consents table exists */
-            }
-            localStorage.setItem('userName', saved.name);
-            localStorage.setItem('userGender', saved.gender);
-            localStorage.setItem('userBirthdate', saved.birthdate);
-            localStorage.setItem('userAge', String(window.Profile?.computeAgeFromBirthdate?.(saved.birthdate) ?? computedAge));
-            setTermsState({ accepted: true, acceptedAt });
-            pendingTermsAcceptedAt = null;
-            window.Profile?.applyThemeFromGender?.(saved.gender);
-            document.body.classList.remove('theme-guest');
-            setInstructionImagesByGender();
-            profileComplete = true;
-            goToServicesStep();
-        } catch (err) {
-            profileComplete = false;
-            if (profileError) profileError.textContent = err?.message || 'Failed to save profile.';
-        }
-    });
-
-    reconsentAcceptBtn?.addEventListener('click', async () => {
-        try {
-            if (reconsentError) reconsentError.textContent = '';
-            if (!reconsentCheckbox?.checked) {
-                if (reconsentError) reconsentError.textContent = 'Please confirm agreement before continuing.';
-                return;
-            }
-            const session = await window.SupabaseApp?.getSession?.();
-            const uid = session?.user?.id;
-            if (!uid) throw new Error('Please sign in first.');
-            const acceptedAt = new Date().toISOString();
-            try {
-                await window.SupabaseApp?.saveTermsConsent?.({ userId: uid, acceptedAt });
-            } catch (_) {
-                /* optional until user_terms_consents table exists */
-            }
-            setTermsState({ accepted: true, acceptedAt });
-            showReconsentModal(false);
-        } catch (err) {
-            if (reconsentError) reconsentError.textContent = err?.message || 'Failed to save your agreement.';
-        }
-    });
-
-    // Mobile menu toggle
-    const menuToggle = document.querySelector('.menu-toggle');
-    const siteNav = document.getElementById('site-nav');
-    
-    if (menuToggle && siteNav) {
-        menuToggle.addEventListener('click', () => {
-            const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-            menuToggle.setAttribute('aria-expanded', !isExpanded);
-            siteNav.classList.toggle('active');
-        });
-    }
-
-    // Option card handlers
     const routes = {
-        'opt-lazy-eye': () => { window.location.href = 'lazytest/index.html?v=20260501-2'; },
-        'opt-vision-test': () => { window.location.href = 'vision-test.html'; },
-        'opt-guidelines': () => { window.location.href = 'guidelines.html'; },
-        'opt-report': () => { window.location.href = 'report.html'; },
-        'opt-dashboard': () => { window.location.href = 'dashboard.html'; }
-    };
-    
-    Object.keys(routes).forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('click', routes[id]);
+        'opt-lazy-eye': () => {
+            window.location.href = 'lazytest/index.html?v=20260501-2';
+        },
+        'opt-vision-test': () => {
+            window.location.href = 'vision-test.html';
+        },
+        'opt-guidelines': () => {
+            window.location.href = 'guidelines.html';
+        },
+        'opt-report': () => {
+            window.location.href = 'report.html';
+        },
+        'opt-dashboard': () => {
+            window.location.href = 'dashboard.html';
         }
+    };
+    Object.keys(routes).forEach((id) => {
+        document.getElementById(id)?.addEventListener('click', routes[id]);
     });
 
-    // Back button on secondary pages
-    const backBtn = document.getElementById('back-btn');
-    if (backBtn) {
-        backBtn.addEventListener('click', () => {
-            if (isProfileCompleteLocally()) {
-                window.location.href = 'index.html#services';
-                return;
-            }
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = 'index.html';
-            }
-        });
-    }
+    document.getElementById('back-btn')?.addEventListener('click', () => {
+        if (profileComplete) window.location.href = 'index.html#services';
+        else if (window.history.length > 1) window.history.back();
+        else window.location.href = 'index.html';
+    });
 
     window.addEventListener('hashchange', () => {
-        if (window.location.hash !== '#services') return;
-        void tryGoToServicesIfReady();
+        if (window.location.hash === '#services') void authApi?.tryGoServices?.();
     });
 });

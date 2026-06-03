@@ -369,33 +369,20 @@
         </div>
     </div>
 
-    <!-- Supabase (Auth + DB) — cache-bust v=1.2.1 after deploy -->
-    <script src="js/vendor/supabase.min.js?v=1.2.1"></script>
-    <script src="js/supabase-config.js?v=1.2.1"></script>
-    <script src="js/supabase.js?v=1.2.1" defer></script>
-    <script src="js/branding.js?v=1.2.1" defer></script>
-    <script src="js/profile.js?v=1.2.1" defer></script>
-    <script src="js/score.js?v=1.2.1" defer></script>
-    <script src="js/pwa-config.js?v=1.2.1" defer></script>
-    <script src="js/session-timer.js?v=1.2.1" defer></script>
-    <script src="js/push-client.js?v=1.2.1" defer></script>
-    <script src="js/pwa-bootstrap.js?v=1.2.1" defer></script>
-    <script src="js/legal-consent.js?v=1.2.1" defer></script>
-    <script src="js/app.js?v=1.2.1" defer></script>
-    <script>
-      (function () {
-        var bootTimer = setTimeout(function () {
-          document.body.classList.remove('wizard-booting');
-          if (!document.querySelector('.wizard-step.active')) {
-            var step = document.getElementById('step-1');
-            if (step) step.classList.add('active');
-          }
-        }, 6000);
-        window.addEventListener('load', function () {
-          clearTimeout(bootTimer);
-        });
-      })();
-    </script>
+    <!-- Supabase + auth (self-hosted library for Edge) -->
+    <script src="js/vendor/supabase.min.js?v=2.0.0"></script>
+    <script src="js/supabase-config.js?v=2.0.0"></script>
+    <script src="js/supabase.js?v=2.0.0" defer></script>
+    <script src="js/branding.js?v=2.0.0" defer></script>
+    <script src="js/profile.js?v=2.0.0" defer></script>
+    <script src="js/score.js?v=2.0.0" defer></script>
+    <script src="js/pwa-config.js?v=2.0.0" defer></script>
+    <script src="js/session-timer.js?v=2.0.0" defer></script>
+    <script src="js/push-client.js?v=2.0.0" defer></script>
+    <script src="js/pwa-bootstrap.js?v=2.0.0" defer></script>
+    <script src="js/legal-consent.js?v=2.0.0" defer></script>
+    <script src="js/auth-wizard.js?v=2.0.0" defer></script>
+    <script src="js/app.js?v=2.0.0" defer></script>
     
     <!-- Structured Data (JSON-LD) for SEO -->
     <script type="application/ld+json">
