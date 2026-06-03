@@ -50,17 +50,22 @@
   }
 
   function getAuthRedirectUrl() {
-    return `${window.location.origin}${getAppIndexPath()}`;
+    return `${window.location.origin}${getAppIndexPath()}#services`;
   }
 
   function listAuthRedirectUrls() {
     const primary = getAuthRedirectUrl();
     const origin = window.location.origin;
+    const indexPath = getAppIndexPath();
     const extras = [
       `${origin}/`,
       `${origin}/index.html`,
+      `${origin}${indexPath}`,
+      `${origin}/index.html#services`,
+      `${origin}${indexPath}#services`,
       `${origin}/Amplyopia/`,
-      `${origin}/Amplyopia/index.html`
+      `${origin}/Amplyopia/index.html`,
+      `${origin}/Amplyopia/index.html#services`
     ];
     return [...new Set([primary, ...extras])];
   }

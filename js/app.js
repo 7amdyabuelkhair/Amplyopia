@@ -71,9 +71,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function wantsSignInQuery() {
+        try {
+            return new URLSearchParams(window.location.search).get('signin') === '1';
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function wantsServicesHash() {
+        return window.location.hash === '#services';
+    }
+
+    async function tryGoToServicesIfReady() {
+        const session = await window.SupabaseApp?.getSession?.();
+        if (!session?.user?.id) return false;
+        if (profileComplete || isProfileCompleteLocally()) {
+            if (!profileComplete && isProfileCompleteLocally()) {
+                profileComplete = true;
+            }
+            goToServicesStep();
+            return true;
+        }
+        return false;
+    }
+
     // Make functions global
-    window.nextStep = function() {
-        if (currentStep === 2 && !profileComplete) return;
+    window.nextStep = async function() {
+        if (currentStep === 1) {
+            const session = await window.SupabaseApp?.getSession?.();
+            if (session?.user?.id) {
+                await hydrateProfileFromSupabase(session);
+                return;
+            }
+        }
+        if (currentStep === 2) {
+            if (profileComplete) {
+                goToServicesStep();
+                return;
+            }
+            const session = await window.SupabaseApp?.getSession?.();
+            if (session?.user?.id) {
+                if (await tryGoToServicesIfReady()) return;
+                showProfileUI();
+                return;
+            }
+            return;
+        }
         if (currentStep < totalSteps) {
             currentStep++;
             showStep(currentStep);
@@ -224,8 +268,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (prevOnServices) prevOnServices.classList.toggle('hidden', profileComplete);
         const indexPath = window.SupabaseApp?.getAppIndexPath?.() || window.location.pathname;
         if (window.history.replaceState) {
-            window.history.replaceState(null, '', `${indexPath}#services`);
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.delete('signin');
+                const qs = params.toString();
+                const suffix = qs ? `?${qs}` : '';
+                window.history.replaceState(null, '', `${indexPath}${suffix}#services`);
+            } catch (_) {
+                window.history.replaceState(null, '', `${indexPath}#services`);
+            }
         }
+        try {
+            localStorage.setItem('amplyopia_onboarded', '1');
+        } catch (_) {}
     }
 
     function showSignedOutState() {
@@ -277,7 +332,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (profile?.birthdate && profileBirthdate) profileBirthdate.value = String(profile.birthdate);
 
-            const check = isProfileComplete(profile);
+            let check = isProfileComplete(profile);
+
+            if (!check.complete && isProfileCompleteLocally()) {
+                check = {
+                    complete: true,
+                    computedAge: window.Profile?.computeAgeFromBirthdate?.(
+                        localStorage.getItem('userBirthdate')
+                    ),
+                    hasName: true,
+                    hasGender: true,
+                    hasBirthdate: true
+                };
+                if (!profile?.name) profile = profile || {};
+                profile.name = profile.name || localStorage.getItem('userName');
+                profile.gender = profile.gender || localStorage.getItem('userGender');
+                profile.birthdate = profile.birthdate || localStorage.getItem('userBirthdate');
+            }
 
             if (check.hasGender && profile?.gender) {
                 window.Profile?.applyThemeFromGender?.(profile.gender);
@@ -318,16 +389,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function showGuestInstructionsStep() {
+        if (isEditProfileMode()) return;
+        currentStep = 1;
+        showStep(1);
+        if (progressIndicator) progressIndicator.classList.remove('hidden');
+    }
+
     // Initial session check + listen to changes (OAuth redirect returns here)
     (async () => {
-        if (!window.SupabaseApp?.configured && authError) {
-            authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
+        document.body.classList.add('wizard-booting');
+
+        if (!window.SupabaseApp?.configured) {
+            document.body.classList.remove('wizard-booting');
+            if (authError) {
+                authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
+            }
+            showGuestInstructionsStep();
             return;
         }
 
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('code') || urlParams.get('error')) {
+        const oauthReturn = urlParams.get('code') || urlParams.get('error');
+        if (oauthReturn || wantsSignInQuery()) {
             goToSignInStep();
+        } else if (wantsServicesHash()) {
+            currentStep = 3;
+            showStep(3);
+            if (progressIndicator) progressIndicator.classList.add('hidden');
         }
 
         const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
@@ -335,12 +424,35 @@ document.addEventListener('DOMContentLoaded', () => {
             authError.textContent = redirect.error.message || 'Google sign-in failed.';
         }
         const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
-        await hydrateProfileFromSupabase(session);
+
+        if (session?.user?.id) {
+            await hydrateProfileFromSupabase(session);
+        } else {
+            showSignedOutState();
+            if (wantsServicesHash() || wantsSignInQuery()) {
+                goToSignInStep();
+            } else if (!isEditProfileMode()) {
+                try {
+                    if (localStorage.getItem('amplyopia_onboarded') === '1') {
+                        goToSignInStep();
+                    } else {
+                        showGuestInstructionsStep();
+                    }
+                } catch (_) {
+                    showGuestInstructionsStep();
+                }
+            }
+        }
+
+        document.body.classList.remove('wizard-booting');
 
         window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
             if (event === 'INITIAL_SESSION') return;
             if (event === 'SIGNED_OUT' || !sess?.user?.id) {
                 showSignedOutState();
+                if (!wantsServicesHash() && !wantsSignInQuery() && !isEditProfileMode()) {
+                    showGuestInstructionsStep();
+                }
                 return;
             }
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
@@ -378,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
         localStorage.removeItem('userName');
+        localStorage.removeItem('amplyopia_onboarded');
         hasAcceptedTerms = false;
         termsAcceptedAt = null;
         window.Branding?.applyFromGender?.(null);
@@ -449,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     signOutBtn?.addEventListener('click', async () => {
         await window.SupabaseApp?.signOut?.();
         localStorage.removeItem('userGender');
+        localStorage.removeItem('amplyopia_onboarded');
         hasAcceptedTerms = false;
         termsAcceptedAt = null;
         window.Branding?.applyFromGender?.(null);
@@ -571,8 +685,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Default: instructions. Auth bootstrap moves to sign-in or services when session exists.
-    if (!isEditProfileMode() && !window.location.hash) {
-        showStep(1);
-    }
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash !== '#services') return;
+        void tryGoToServicesIfReady();
+    });
 });
