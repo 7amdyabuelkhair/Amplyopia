@@ -1,26 +1,11 @@
 /* Amplyopia PWA service worker */
-const CACHE_NAME = 'amplyopia-pwa-v1.1.8';
+const CACHE_NAME = 'amplyopia-pwa-v1.2.0';
+
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/dashboard.html',
   '/manifest.json',
   '/manifest-boy.json',
   '/manifest-girl.json',
   '/manifest-guest.json',
-  '/css/styles.css',
-  '/css/pwa.css',
-  '/js/branding.js',
-  '/js/pwa-config.js',
-  '/js/pwa-bootstrap.js',
-  '/js/session-timer.js',
-  '/js/push-client.js',
-  '/js/vendor/supabase.min.js',
-  '/js/supabase-config.js',
-  '/js/supabase.js',
-  '/js/app.js',
-  '/js/profile.js',
-  '/js/legal-consent.js',
   '/images/logo/blue-favicon.ico',
   '/images/logo/pink-favicon.ico',
   '/images/logo/yellow-favicon.ico',
@@ -31,6 +16,17 @@ const STATIC_ASSETS = [
   '/images/logo/pink-web-app-manifest-512x512.png',
   '/images/logo/yellow-web-app-manifest-512x512.png'
 ];
+
+function shouldCacheResponse(req, res) {
+  if (!res || res.status !== 200) return false;
+  const url = new URL(req.url);
+  if (url.pathname.endsWith('.html') || url.pathname === '/') return false;
+  return (
+    url.pathname.includes('/css/') ||
+    url.pathname.includes('/js/') ||
+    url.pathname.includes('/images/')
+  );
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -58,21 +54,18 @@ self.addEventListener('fetch', (event) => {
 
   if (req.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.includes('/rest/v1/') || url.pathname.includes('supabase.co')) return;
+  if (url.pathname.includes('/rest/v1/') || url.hostname.includes('supabase.co')) return;
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200 && (req.url.includes('/css/') || req.url.includes('/js/') || req.url.includes('/images/'))) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(req)
+      .then((res) => {
+        if (shouldCacheResponse(req, res)) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req))
   );
 });
 

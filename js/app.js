@@ -398,7 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial session check + listen to changes (OAuth redirect returns here)
     (async () => {
-        document.body.classList.add('wizard-booting');
         try {
             if (!window.supabase?.createClient) {
                 if (authError) {
@@ -421,10 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const oauthReturn = urlParams.get('code') || urlParams.get('error');
             if (oauthReturn || wantsSignInQuery()) {
                 goToSignInStep();
-            } else if (wantsServicesHash()) {
-                currentStep = 3;
-                showStep(3);
-                if (progressIndicator) progressIndicator.classList.add('hidden');
             }
 
             const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
@@ -473,8 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Could not start the app. Try clearing site data or allow storage for amplyopia.com in Edge settings.';
             }
             goToSignInStep();
-        } finally {
-            document.body.classList.remove('wizard-booting');
         }
     })();
 

@@ -13,9 +13,75 @@
   }
 
   function readConfig() {
-    const url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || '';
-    const anonKey = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || '';
+    let url = window.SUPABASE_URL || '';
+    let anonKey = window.SUPABASE_ANON_KEY || '';
+    try {
+      if (!url) url = localStorage.getItem('SUPABASE_URL') || '';
+      if (!anonKey) anonKey = localStorage.getItem('SUPABASE_ANON_KEY') || '';
+    } catch (_) {}
     return { url, anonKey };
+  }
+
+  /** Edge Tracking Prevention can block storage; fall back to sessionStorage then memory. */
+  function createAuthStorage() {
+    const memoryStore = Object.create(null);
+    const memory = {
+      getItem(key) {
+        return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+      },
+      setItem(key, value) {
+        memoryStore[key] = String(value);
+      },
+      removeItem(key) {
+        delete memoryStore[key];
+      }
+    };
+
+    function wrap(store) {
+      return {
+        getItem(key) {
+          try {
+            return store.getItem(key);
+          } catch (_) {
+            return memory.getItem(key);
+          }
+        },
+        setItem(key, value) {
+          try {
+            store.setItem(key, String(value));
+          } catch (_) {
+            memory.setItem(key, value);
+          }
+        },
+        removeItem(key) {
+          try {
+            store.removeItem(key);
+          } catch (_) {
+            memory.removeItem(key);
+          }
+        }
+      };
+    }
+
+    for (const store of [window.localStorage, window.sessionStorage]) {
+      if (!store) continue;
+      try {
+        const probe = '__amplyopia_storage_probe__';
+        store.setItem(probe, '1');
+        store.removeItem(probe);
+        return wrap(store);
+      } catch (_) {}
+    }
+    return memory;
+  }
+
+  function withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`${label} timed out. Check your connection and reload.`)), ms);
+      })
+    ]);
   }
 
   function createClient() {
@@ -25,7 +91,7 @@
       if (!url || !anonKey) return null;
       return supabaseGlobal.createClient(url, anonKey, {
         auth: {
-          storage: window.localStorage,
+          storage: createAuthStorage(),
           storageKey: 'amplyopia-auth-session',
           persistSession: true,
           autoRefreshToken: true,
@@ -126,17 +192,24 @@
       return { session: null, error: new Error(desc) };
     }
 
-    const { data, error } = await client.auth.exchangeCodeForSession(code);
+    const { data, error } = await withTimeout(
+      client.auth.exchangeCodeForSession(code),
+      20000,
+      'Google sign-in'
+    );
     cleanAuthParamsFromUrl();
 
     if (error || !data?.session) {
       const detail = error?.message ? ` (${error.message})` : '';
+      const storageHint =
+        ' If you use Microsoft Edge, turn off Tracking Prevention for amplyopia.com or allow site storage, then sign in again from a fresh page (without ?code= in the URL).';
       return {
         session: null,
         error: new Error(
           'Google sign-in could not be completed' +
             detail +
-            '. In Supabase → Authentication → URL configuration, add ALL of these Redirect URLs: ' +
+            storageHint +
+            ' In Supabase → Authentication → URL configuration, add ALL of these Redirect URLs: ' +
             listAuthRedirectUrls().join(' , ')
         )
       };
@@ -146,14 +219,18 @@
 
   async function getSession() {
     if (!client) return null;
-    const { data, error } = await client.auth.getSession();
-    if (error) return null;
-    if (data?.session) return data.session;
+    try {
+      const { data, error } = await withTimeout(client.auth.getSession(), 12000, 'Session load');
+      if (error) return null;
+      if (data?.session) return data.session;
 
-    // Fallback: try refreshing silently so users stay signed in across visits.
-    const refreshed = await client.auth.refreshSession();
-    if (refreshed?.error) return null;
-    return refreshed?.data?.session || null;
+      const refreshed = await withTimeout(client.auth.refreshSession(), 12000, 'Session refresh');
+      if (refreshed?.error) return null;
+      return refreshed?.data?.session || null;
+    } catch (e) {
+      console.warn('getSession failed:', e);
+      return null;
+    }
   }
 
   function onAuthStateChange(cb) {

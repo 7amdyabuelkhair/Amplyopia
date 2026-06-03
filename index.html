@@ -369,19 +369,33 @@
         </div>
     </div>
 
-    <!-- Supabase (Auth + DB) -->
-    <script src="js/vendor/supabase.min.js"></script>
-    <script src="js/supabase-config.js"></script>
-    <script src="js/supabase.js" defer></script>
-    <script src="js/branding.js" defer></script>
-    <script src="js/profile.js" defer></script>
-    <script src="js/score.js" defer></script>
-    <script src="js/pwa-config.js" defer></script>
-    <script src="js/session-timer.js" defer></script>
-    <script src="js/push-client.js" defer></script>
-    <script src="js/pwa-bootstrap.js" defer></script>
-    <script src="js/legal-consent.js" defer></script>
-    <script src="js/app.js" defer></script>
+    <!-- Supabase (Auth + DB) — cache-bust v=1.2.0 after deploy -->
+    <script src="js/vendor/supabase.min.js?v=1.2.0"></script>
+    <script src="js/supabase-config.js?v=1.2.0"></script>
+    <script src="js/supabase.js?v=1.2.0" defer></script>
+    <script src="js/branding.js?v=1.2.0" defer></script>
+    <script src="js/profile.js?v=1.2.0" defer></script>
+    <script src="js/score.js?v=1.2.0" defer></script>
+    <script src="js/pwa-config.js?v=1.2.0" defer></script>
+    <script src="js/session-timer.js?v=1.2.0" defer></script>
+    <script src="js/push-client.js?v=1.2.0" defer></script>
+    <script src="js/pwa-bootstrap.js?v=1.2.0" defer></script>
+    <script src="js/legal-consent.js?v=1.2.0" defer></script>
+    <script src="js/app.js?v=1.2.0" defer></script>
+    <script>
+      (function () {
+        var bootTimer = setTimeout(function () {
+          document.body.classList.remove('wizard-booting');
+          if (!document.querySelector('.wizard-step.active')) {
+            var step = document.getElementById('step-1');
+            if (step) step.classList.add('active');
+          }
+        }, 6000);
+        window.addEventListener('load', function () {
+          clearTimeout(bootTimer);
+        });
+      })();
+    </script>
     
     <!-- Structured Data (JSON-LD) for SEO -->
     <script type="application/ld+json">
