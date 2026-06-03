@@ -124,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let authMode = 'signin';
     let authReady = false;
+    let activeUserId = null;
+    let signingOut = false;
     let pendingTermsAcceptedAt = null;
     let hasAcceptedTerms = false;
     let termsAcceptedAt = null;
@@ -222,9 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleAuthSession(session) {
         if (!authReady) return;
+        const uid = session?.user?.id || null;
+        if (!uid && activeUserId && !signingOut) return;
+        activeUserId = uid;
         hydrateProfileFromSupabase(session);
-        updateNavForSignedIn(!!session?.user?.id);
-        updateAdminServiceCard(session);
+        updateNavForSignedIn(!!uid);
     }
 
     async function hydrateProfileFromSupabase(session) {
@@ -241,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             goToSignInStep();
             showProfileUI();
             updateNavForSignedIn(true);
-            updateAdminServiceCard(session);
+            activeUserId = session.user.id;
             if (profileError) profileError.textContent = '';
             if (profileWelcome) profileWelcome.textContent = `Signed in as ${session.user.email || 'user'}.`;
 
@@ -335,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
         await hydrateProfileFromSupabase(session);
         updateNavForSignedIn(!!session?.user?.id);
-        updateAdminServiceCard(session);
+        activeUserId = session?.user?.id || null;
         authReady = true;
         window.SupabaseApp?.onAuthStateChange?.(handleAuthSession);
     })();
@@ -371,7 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     navSignoutBtn?.addEventListener('click', async () => {
+        signingOut = true;
+        activeUserId = null;
         await window.SupabaseApp?.signOut?.();
+        signingOut = false;
         localStorage.removeItem('userGender');
         localStorage.removeItem('userBirthdate');
         localStorage.removeItem('userAge');
@@ -420,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (signup?.session) {
                     await hydrateProfileFromSupabase(signup.session);
                     updateNavForSignedIn(true);
-                    updateAdminServiceCard(signup.session);
+                    activeUserId = signup.session.user?.id || null;
                     if (authError) authError.textContent = '';
                 } else {
                     setAuthMode('signin');
@@ -434,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const active = session || (await window.SupabaseApp?.getSession?.());
                 await hydrateProfileFromSupabase(active);
                 updateNavForSignedIn(!!active?.user?.id);
-                updateAdminServiceCard(active);
+                activeUserId = active?.user?.id || null;
             }
         } catch (err) {
             goToSignInStep();
@@ -543,8 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'opt-vision-test': () => { window.location.href = 'vision-test.html'; },
         'opt-guidelines': () => { window.location.href = 'guidelines.html'; },
         'opt-report': () => { window.location.href = 'report.html'; },
-        'opt-dashboard': () => { window.location.href = 'dashboard.html'; },
-        'opt-admin': () => { window.location.href = 'admin/index.html'; }
+        'opt-dashboard': () => { window.location.href = 'dashboard.html'; }
     };
     
     Object.keys(routes).forEach((id) => {

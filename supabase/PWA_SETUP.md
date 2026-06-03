@@ -37,7 +37,7 @@ Open:
 
 `/admin/index.html`
 
-Sign in on the main app with an admin email (`ADMIN_EMAILS` in `js/pwa-config.js`), open **Admin** from Choose Service (no second password). Or use `/admin/index.html` while already signed in.
+Sign in with an admin account (`is_admin = true` in profiles), then open `/admin/index.html`.
 
 ## 5) Push behavior
 
