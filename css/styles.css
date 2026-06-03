@@ -453,7 +453,8 @@ body::before {
 
 /* Wizard Steps */
 body.wizard-booting .main-content {
-    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .wizard-step {

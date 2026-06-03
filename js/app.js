@@ -399,66 +399,83 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial session check + listen to changes (OAuth redirect returns here)
     (async () => {
         document.body.classList.add('wizard-booting');
-
-        if (!window.SupabaseApp?.configured) {
-            document.body.classList.remove('wizard-booting');
-            if (authError) {
-                authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
-            }
-            showGuestInstructionsStep();
-            return;
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const oauthReturn = urlParams.get('code') || urlParams.get('error');
-        if (oauthReturn || wantsSignInQuery()) {
-            goToSignInStep();
-        } else if (wantsServicesHash()) {
-            currentStep = 3;
-            showStep(3);
-            if (progressIndicator) progressIndicator.classList.add('hidden');
-        }
-
-        const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
-        if (redirect?.error && authError) {
-            authError.textContent = redirect.error.message || 'Google sign-in failed.';
-        }
-        const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
-
-        if (session?.user?.id) {
-            await hydrateProfileFromSupabase(session);
-        } else {
-            showSignedOutState();
-            if (wantsServicesHash() || wantsSignInQuery()) {
+        try {
+            if (!window.supabase?.createClient) {
+                if (authError) {
+                    authError.textContent =
+                        'App failed to load (auth library missing). Clear cache and reload, or disable Tracking Prevention for this site.';
+                }
                 goToSignInStep();
-            } else if (!isEditProfileMode()) {
-                try {
-                    if (localStorage.getItem('amplyopia_onboarded') === '1') {
-                        goToSignInStep();
-                    } else {
-                        showGuestInstructionsStep();
-                    }
-                } catch (_) {
-                    showGuestInstructionsStep();
-                }
-            }
-        }
-
-        document.body.classList.remove('wizard-booting');
-
-        window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
-            if (event === 'INITIAL_SESSION') return;
-            if (event === 'SIGNED_OUT' || !sess?.user?.id) {
-                showSignedOutState();
-                if (!wantsServicesHash() && !wantsSignInQuery() && !isEditProfileMode()) {
-                    showGuestInstructionsStep();
-                }
                 return;
             }
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                void hydrateProfileFromSupabase(sess);
+
+            if (!window.SupabaseApp?.configured) {
+                if (authError) {
+                    authError.textContent = 'Supabase is not configured yet. Add SUPABASE_URL and SUPABASE_ANON_KEY in your project.';
+                }
+                showGuestInstructionsStep();
+                return;
             }
-        });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const oauthReturn = urlParams.get('code') || urlParams.get('error');
+            if (oauthReturn || wantsSignInQuery()) {
+                goToSignInStep();
+            } else if (wantsServicesHash()) {
+                currentStep = 3;
+                showStep(3);
+                if (progressIndicator) progressIndicator.classList.add('hidden');
+            }
+
+            const redirect = await window.SupabaseApp?.finishAuthRedirect?.();
+            if (redirect?.error && authError) {
+                authError.textContent = redirect.error.message || 'Google sign-in failed.';
+            }
+            const session = redirect?.session || (await window.SupabaseApp?.getSession?.());
+
+            if (session?.user?.id) {
+                await hydrateProfileFromSupabase(session);
+            } else {
+                showSignedOutState();
+                if (wantsServicesHash() || wantsSignInQuery() || oauthReturn) {
+                    goToSignInStep();
+                } else if (!isEditProfileMode()) {
+                    try {
+                        if (localStorage.getItem('amplyopia_onboarded') === '1') {
+                            goToSignInStep();
+                        } else {
+                            showGuestInstructionsStep();
+                        }
+                    } catch (_) {
+                        showGuestInstructionsStep();
+                    }
+                }
+            }
+
+            window.SupabaseApp?.onAuthStateChange?.((event, sess) => {
+                if (event === 'INITIAL_SESSION') return;
+                if (event === 'SIGNED_OUT' || !sess?.user?.id) {
+                    showSignedOutState();
+                    if (!wantsServicesHash() && !wantsSignInQuery() && !isEditProfileMode()) {
+                        showGuestInstructionsStep();
+                    }
+                    return;
+                }
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                    void hydrateProfileFromSupabase(sess);
+                }
+            });
+        } catch (err) {
+            console.error('App bootstrap failed:', err);
+            if (authError) {
+                authError.textContent =
+                    err?.message ||
+                    'Could not start the app. Try clearing site data or allow storage for amplyopia.com in Edge settings.';
+            }
+            goToSignInStep();
+        } finally {
+            document.body.classList.remove('wizard-booting');
+        }
     })();
 
     // Navbar user chip + sign-out
