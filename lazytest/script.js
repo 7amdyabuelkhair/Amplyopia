@@ -374,7 +374,9 @@ const RB_EX1_IMAGES = [
 
 const RB_EX2_IMAGES = [
     // Add your motor-fusion images/GIFs in red-blue/ex-2 and list them here, e.g.:
-    // "fusion-1.gif",
+     "ezgif.com-video-to-gif-converter.gif",
+    "ezgif.com-video-to-gif-converter (1).gif",
+    "ezgif.com-video-to-gif-converter (2).gif"
 ];
 
 function rbExpectedAnswer(filename) {
