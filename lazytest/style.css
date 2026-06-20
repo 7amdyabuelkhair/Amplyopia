@@ -573,3 +573,175 @@ body {
         border-radius: 16px;
     }
 }
+
+/* ========== Glassmorphism modals ========== */
+.glass-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(12, 18, 32, 0.38);
+    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.glass-modal.hidden {
+    display: none !important;
+}
+
+.glass-modal.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.glass-modal-card {
+    width: min(460px, 100%);
+    padding: 28px 26px 24px;
+    border-radius: 24px;
+    text-align: center;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.82) 0%,
+        rgba(240, 248, 255, 0.72) 45%,
+        rgba(255, 240, 250, 0.68) 100%
+    );
+    box-shadow:
+        0 24px 64px rgba(100, 140, 200, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    transform: scale(0.9) translateY(16px);
+    opacity: 0;
+    transition:
+        transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1),
+        opacity 0.35s ease;
+}
+
+.glass-modal.is-open .glass-modal-card {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.glass-modal-card--accent {
+    border-color: rgba(248, 117, 185, 0.45);
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.88) 0%,
+        rgba(255, 235, 248, 0.78) 50%,
+        rgba(255, 220, 240, 0.72) 100%
+    );
+    box-shadow:
+        0 24px 64px rgba(248, 117, 185, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.glass-modal-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 8px rgba(248, 117, 185, 0.25));
+}
+
+.glass-modal-title {
+    margin: 0 0 12px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #2a3550;
+    letter-spacing: -0.02em;
+}
+
+.glass-modal-text {
+    margin: 0 0 22px;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: #4a5568;
+}
+
+.glass-modal-link-wrap {
+    margin: -10px 0 20px;
+}
+
+.glass-modal-link {
+    display: inline-block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e056a0;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1.5px solid rgba(248, 117, 185, 0.35);
+    transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.glass-modal-link:hover {
+    color: #c04488;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 14px rgba(248, 117, 185, 0.2);
+}
+
+.glass-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.glass-modal-btn {
+    display: block;
+    width: 100%;
+    padding: 0.85rem 1.4rem;
+    font-size: 1.05rem;
+    font-family: inherit;
+    font-weight: 600;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.glass-modal-btn:hover {
+    transform: translateY(-1px);
+}
+
+.glass-modal-btn:active {
+    transform: translateY(0);
+}
+
+.glass-modal-btn--primary {
+    color: #fff;
+    background: linear-gradient(135deg, #f875b9 0%, #e056a0 100%);
+    box-shadow: 0 6px 20px rgba(248, 117, 185, 0.35);
+}
+
+.glass-modal-btn--primary:hover {
+    box-shadow: 0 8px 24px rgba(248, 117, 185, 0.45);
+}
+
+.glass-modal-btn--secondary {
+    color: #4a5568;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1.5px solid rgba(180, 200, 230, 0.6);
+    box-shadow: 0 2px 10px rgba(100, 140, 200, 0.1);
+}
+
+@media (min-width: 480px) {
+    .glass-modal-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .glass-modal-btn {
+        width: auto;
+        min-width: 160px;
+    }
+
+    .glass-modal-card:not(.glass-modal-card--accent) .glass-modal-btn--primary {
+        order: 2;
+    }
+}

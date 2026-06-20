@@ -55,6 +55,11 @@ let currentGame = 0;
 let levelScores = levels.map(() => []);
 let completedGames = levels.map(() => []);
 
+try {
+    const savedLevel = Number(sessionStorage.getItem('amplyopia_lazy_current_level'));
+    if (savedLevel >= 0 && savedLevel < levels.length) currentLevel = savedLevel;
+} catch (_) {}
+
 /* ======================== ELEMENTS ========================== */
 const mainMenu = document.getElementById('main-menu');
 const videosBtn = document.getElementById('videos-btn');
@@ -86,6 +91,70 @@ const level6Btn = document.getElementById('level6-btn');
 function show(el) { if (el) el.classList.remove('hidden'); }
 function hide(...els) { els.forEach(e => e.classList.add('hidden')); }
 
+/* =========== GLASS MODALS =========== */
+const rbGlassesModal = document.getElementById('rb-glasses-modal');
+const rbGlassesConfirm = document.getElementById('rb-glasses-confirm');
+
+function showGlassModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => modal.classList.add('is-open'));
+    });
+}
+
+function hideGlassModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    setTimeout(() => modal.classList.add('hidden'), 380);
+}
+
+function showRbGlassesModal(onConfirm) {
+    if (!rbGlassesModal || !rbGlassesConfirm) {
+        if (typeof onConfirm === 'function') onConfirm();
+        return;
+    }
+
+    const handleConfirm = () => {
+        rbGlassesModal.removeEventListener('click', handleBackdrop);
+        document.removeEventListener('keydown', handleEscape);
+        rbGlassesConfirm.onclick = null;
+        hideGlassModal(rbGlassesModal);
+        if (typeof onConfirm === 'function') onConfirm();
+    };
+
+    const handleBackdrop = (e) => {
+        if (e.target === rbGlassesModal) handleConfirm();
+    };
+
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            rbGlassesModal.removeEventListener('click', handleBackdrop);
+            document.removeEventListener('keydown', handleEscape);
+            rbGlassesConfirm.onclick = null;
+            hideGlassModal(rbGlassesModal);
+            hide(levelGames);
+            show(mainMenu);
+        }
+    };
+
+    rbGlassesConfirm.onclick = handleConfirm;
+    rbGlassesModal.addEventListener('click', handleBackdrop);
+    document.addEventListener('keydown', handleEscape);
+    showGlassModal(rbGlassesModal);
+    rbGlassesConfirm.focus();
+}
+
+function proceedOpenLevel(lvl) {
+    currentLevel = lvl;
+    try { sessionStorage.setItem('amplyopia_lazy_current_level', String(lvl)); } catch (_) {}
+    updateGamesList();
+    levelTitle.textContent = levels[lvl].name;
+    show(levelGames);
+    hide(mainMenu, gameArea, gameResult, giftScreen, finalScreen);
+    window.LevelReminder?.onLevelStarted?.(lvl);
+}
+
 /* =========== MAIN MENU & LEVEL LOGIC =========== */
 level1Btn.onclick = () => openLevel(0);
 level2Btn.onclick = () => openLevel(1);
@@ -103,15 +172,12 @@ try {
     }
 } catch (_) {}
 
-function openLevel(lvl) {
-    currentLevel = lvl;
-    if (lvl === 5) {
-        window.alert('Please wear your red/blue glasses before starting Level 6.');
+function openLevel(lvl, skipGlassesCheck) {
+    if (lvl === 5 && !skipGlassesCheck) {
+        showRbGlassesModal(() => openLevel(lvl, true));
+        return;
     }
-    updateGamesList();
-    levelTitle.textContent = levels[lvl].name;
-    show(levelGames);
-    hide(mainMenu, gameArea, gameResult, giftScreen, finalScreen);
+    proceedOpenLevel(lvl);
 }
 backMainBtn.onclick = () => {
     hide(levelGames);
@@ -350,10 +416,14 @@ playAgainBtn.onclick = () => {
     level2Btn.disabled = false;
     level3Btn.disabled = true;
     if (level4Btn) level4Btn.disabled = true;
+    window.LevelReminder?.clear?.();
+    try { sessionStorage.removeItem('amplyopia_lazy_current_level'); } catch (_) {}
     hide(finalScreen, gameArea, gameResult, giftScreen, levelGames);
     show(mainMenu);
 }
 returnMainBtn.onclick = () => {
+    window.LevelReminder?.clear?.();
+    try { sessionStorage.removeItem('amplyopia_lazy_current_level'); } catch (_) {}
     hide(finalScreen, gameArea, gameResult, giftScreen, levelGames);
     show(mainMenu);
 }
@@ -3458,6 +3528,8 @@ function showGiftScreen() {
             openLevel(3);
         } else if (currentLevel === 3) {
             openLevel(4);
+        } else if (currentLevel === 4) {
+            openLevel(5);
         } else {
             // All levels finished: compute full session results and send to Lazy-eye Firebase
             try {
@@ -3519,6 +3591,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 window.onload = function () {
+    window.LevelReminder?.init?.({
+        getCurrentLevel: () => currentLevel,
+        onGoToNextLevel: (levelIndex) => {
+            const next = levelIndex + 1;
+            if (next < levels.length) openLevel(next);
+        }
+    });
+
     // بعد 2.5 ثانية (مدة الـ intro.gif تقريبًا) نخفي splash ونظهر welcome animation
     setTimeout(function () {
         document.getElementById('intro-splash').style.display = 'none';
@@ -3536,7 +3616,3 @@ window.onload = function () {
         }, 2400);
     }, 2400);
 };
-
-
-
-

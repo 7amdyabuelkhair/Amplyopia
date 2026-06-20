@@ -86,6 +86,32 @@
 
 <audio id="btn-hover-sound" src="click-21156.mp3" preload="auto"></audio>
 
+<!-- Level 6 Red/Blue glasses modal -->
+<div id="rb-glasses-modal" class="glass-modal hidden" role="dialog" aria-modal="true" aria-labelledby="rb-glasses-title">
+    <div class="glass-modal-card glass-modal-card--accent">
+        <div class="glass-modal-icon" aria-hidden="true">🕶️</div>
+        <h2 id="rb-glasses-title" class="glass-modal-title">Red/Blue Glasses Required</h2>
+        <p class="glass-modal-text">Please wear your red/blue glasses before starting Level 6. They help your eyes work together during this training.</p>
+        <p class="glass-modal-link-wrap">
+            <a href="https://ar.aliexpress.com/i/32819349326.html" class="glass-modal-link" target="_blank" rel="noopener noreferrer">Buy red/blue glasses</a>
+        </p>
+        <button id="rb-glasses-confirm" type="button" class="glass-modal-btn glass-modal-btn--primary">I'm wearing them — Continue</button>
+    </div>
+</div>
+
+<!-- Training session reminder modal -->
+<div id="level-reminder-modal" class="glass-modal hidden" role="dialog" aria-modal="true" aria-labelledby="level-reminder-title">
+    <div class="glass-modal-card">
+        <div class="glass-modal-icon" aria-hidden="true">✨</div>
+        <h2 id="level-reminder-title" class="glass-modal-title">Ready for your next step?</h2>
+        <p id="level-reminder-msg" class="glass-modal-text"></p>
+        <div class="glass-modal-actions">
+            <button id="level-reminder-next" type="button" class="glass-modal-btn glass-modal-btn--primary">Go to next level</button>
+            <button id="level-reminder-dismiss" type="button" class="glass-modal-btn glass-modal-btn--secondary">Keep playing</button>
+        </div>
+    </div>
+</div>
+
 <footer style="padding:20px;text-align:center;">
     <p>© <span id="year"></span> Amplyopia</p>
     <p><a href="../terms.html">Terms &amp; Conditions</a> | <a href="../privacy.html">Privacy Policy</a></p>
@@ -114,9 +140,10 @@
 <script src="../js/legal-consent.js"></script>
 <script src="../js/pwa-config.js" defer></script>
 <script src="../js/session-timer.js" defer></script>
+<script src="../js/level-reminder.js" defer></script>
 <script src="../js/push-client.js" defer></script>
 <script src="../js/pwa-bootstrap.js" defer></script>
-<script src="script.js?v=20260501-1"></script>
+<script src="script.js?v=20260620-1"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const yearEl = document.getElementById('year');
