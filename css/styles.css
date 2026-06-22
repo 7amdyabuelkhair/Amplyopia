@@ -620,6 +620,9 @@ body::before {
     margin: 0 auto;
 }
 
+html.theme-boy { background-color: #f4f9ff; }
+html.theme-girl { background-color: #fbfaef; }
+
 .hidden {
     display: none !important;
 }
@@ -648,17 +651,80 @@ body::before {
 }
 
 .auth-loading-spinner {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 16px;
-    border: 4px solid var(--tint-2);
-    border-top-color: var(--primary, #5b4acb);
-    border-radius: 50%;
-    animation: auth-spin 0.85s linear infinite;
+    display: none;
 }
 
-@keyframes auth-spin {
-    to { transform: rotate(360deg); }
+.auth-loading-glasses {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    animation: auth-glasses-float 2.2s ease-in-out infinite;
+}
+
+.auth-loading-glasses-lens {
+    width: 54px;
+    height: 46px;
+    border: 3px solid #2a2a35;
+    border-radius: 12px 12px 16px 16px;
+    position: relative;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.auth-loading-glasses-lens--red {
+    background: linear-gradient(145deg, rgba(255, 70, 70, 0.75), rgba(255, 120, 120, 0.55));
+    margin-right: -2px;
+    animation: auth-lens-glow-red 1.4s ease-in-out infinite alternate;
+}
+
+.auth-loading-glasses-lens--blue {
+    background: linear-gradient(145deg, rgba(60, 120, 255, 0.75), rgba(120, 170, 255, 0.55));
+    margin-left: -2px;
+    animation: auth-lens-glow-blue 1.4s ease-in-out infinite alternate;
+    animation-delay: 0.35s;
+}
+
+.auth-loading-glasses-bridge {
+    width: 16px;
+    height: 10px;
+    background: #2a2a35;
+    border-radius: 3px;
+    margin-top: -6px;
+    z-index: 1;
+}
+
+.auth-loading-glasses-arm {
+    position: absolute;
+    top: 18px;
+    width: 28px;
+    height: 4px;
+    background: #2a2a35;
+    border-radius: 2px;
+}
+
+.auth-loading-glasses-arm--left {
+    left: -24px;
+    transform: rotate(-8deg);
+}
+
+.auth-loading-glasses-arm--right {
+    right: -24px;
+    transform: rotate(8deg);
+}
+
+@keyframes auth-glasses-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+}
+
+@keyframes auth-lens-glow-red {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.25); }
+}
+
+@keyframes auth-lens-glow-blue {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.25); }
 }
 
 .auth-loading-title {

@@ -2,13 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('report-content');
     const btnVision = document.getElementById('btn-report-vision');
     const btnLazy = document.getElementById('btn-report-lazy');
-    const searchInput = document.getElementById('patient-search');
-    const searchBtn = document.getElementById('btn-search');
-    const searchResults = document.getElementById('search-results');
-    
+    const userNameEl = document.getElementById('report-user-name');
+
     if (!container || !btnVision || !btnLazy) return;
 
-    let currentView = 'latest'; // 'latest', 'search', 'specific'
+    let currentUserName = '';
 
     function setActive(button) {
         [btnVision, btnLazy].forEach(b => b.classList.remove('primary'));
@@ -53,14 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dateStr = when.toISOString().split('T')[0];
         const timeStr = when.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        const patientName = latest.patientName ? ` - ${latest.patientName}` : '';
         const patientAge = latest.patientAge ? ` (Age: ${latest.patientAge})` : '';
 
         container.innerHTML = `
             <div class="vt-result" style="margin:0;">
                 <div class="result-summary">${summaryText}</div>
                 <div class="results-table-container">
-                    <h3>${title}${patientName}${patientAge}</h3>
+                    <h3>${title}${patientAge}</h3>
                     <div class="test-info">
                         <span>Date: ${dateStr}</span>
                         <span>Time: ${timeStr}</span>
@@ -96,160 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    async function loadVisionReport() {
-        container.style.display = 'block';
-        container.innerHTML = '<p>Loading your latest vision test…</p>';
-        try {
-            if (window.VisionDB && typeof window.VisionDB.initFirebase === 'function') {
-                window.VisionDB.initFirebase();
-            }
+    function displayVisionGraph(results) {
+        const sortedResults = [...results].sort((a, b) => new Date(a.when || 0) - new Date(b.when || 0));
 
-            const latest = await window.VisionDB?.getLatestVisionResult();
-            if (!latest) {
-                container.innerHTML =
-                    '<p>No vision tests found yet. Please complete a vision test first.</p>';
-                return;
-            }
-
-            displayVisionReport(latest, 'Latest Vision Test');
-        } catch (e) {
-            console.error('Error loading latest vision result:', e);
-            container.innerHTML =
-                '<p>Could not load vision test results. Please try running a new vision test.</p>';
-        }
-    }
-
-    async function searchByPatientName(patientName) {
-        if (!patientName || patientName.trim() === '') {
-            searchResults.style.display = 'none';
-            return;
-        }
-
-        searchResults.style.display = 'block';
-        searchResults.innerHTML = '<p>Searching...</p>';
-
-        try {
-            if (window.VisionDB && typeof window.VisionDB.initFirebase === 'function') {
-                window.VisionDB.initFirebase();
-            }
-
-            const results = await window.VisionDB?.getVisionResultsByPatientName(patientName.trim());
-            
-            console.log('Search results:', results);
-            
-            if (!results || results.length === 0) {
-                searchResults.innerHTML = `
-                    <div class="search-message">
-                        <p>No tests found for patient: <strong>${patientName}</strong></p>
-                        <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">
-                            Make sure the patient name was entered when taking the test. 
-                            If tests were taken before adding name/age, they may not be searchable.
-                        </p>
-                    </div>
-                `;
-                container.innerHTML = '<p>Search for a patient name above or view your latest test result.</p>';
-                return;
-            }
-
-            // Display list of test dates
-            const resultsList = results.map((result, index) => {
-                const when = result.when ? new Date(result.when) : new Date();
-                const dateStr = when.toISOString().split('T')[0];
-                const timeStr = when.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                const resultId = result.id || `local-${index}`;
-                
-                return `
-                    <div class="test-date-item" data-result-index="${index}">
-                        <div class="test-date-info">
-                            <span class="test-date">${dateStr}</span>
-                            <span class="test-time">${timeStr}</span>
-                        </div>
-                        <button class="btn-view-report" data-result-index="${index}">
-                            View Report
-                        </button>
-                    </div>
-                `;
-            }).join('');
-
-            searchResults.innerHTML = `
-                <div class="search-header">
-                    <h3>Found ${results.length} test${results.length > 1 ? 's' : ''} for: <strong>${patientName}</strong></h3>
-                    ${results.length > 1 ? `<button id="btn-show-graph" class="btn btn-primary" style="margin-top: 15px;">Show Progress Graph</button>` : ''}
-                </div>
-                <div class="test-dates-list">
-                    ${resultsList}
-                </div>
-            `;
-
-            // Store results globally for access by viewSpecificReport
-            window.currentSearchResults = results;
-            window.currentPatientName = patientName;
-
-            // Add click handlers to view report buttons
-            setTimeout(() => {
-                document.querySelectorAll('.btn-view-report').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const index = parseInt(this.getAttribute('data-result-index'));
-                        viewSpecificReport(index);
-                    });
-                });
-                
-                // Add graph button handler if multiple results
-                const graphBtn = document.getElementById('btn-show-graph');
-                if (graphBtn && results.length > 1) {
-                    graphBtn.addEventListener('click', () => {
-                        displayVisionGraph(results, patientName);
-                    });
-                }
-            }, 0);
-
-            // Show report toggle and clear data buttons after search
-            const reportToggle = document.getElementById('report-toggle');
-            const clearDataContainer = document.getElementById('clear-data-container');
-            if (reportToggle) reportToggle.style.display = 'flex';
-            if (clearDataContainer) clearDataContainer.style.display = 'block';
-            
-            // Hide report container until a date is clicked
-            container.style.display = 'none';
-            container.innerHTML = '<p>Click on a test date above to view the report, or click "Show Progress Graph" to see all results over time.</p>';
-
-        } catch (e) {
-            console.error('Error searching for patient:', e);
-            searchResults.innerHTML = `
-                <div class="search-message error">
-                    <p>Error searching for patient. Please try again.</p>
-                </div>
-            `;
-            container.style.display = 'none';
-        }
-    }
-
-    // Make viewSpecificReport available globally
-    window.viewSpecificReport = function(index) {
-        if (!window.currentSearchResults || !window.currentSearchResults[index]) {
-            console.error('Report not found');
-            return;
-        }
-
-        const result = window.currentSearchResults[index];
-        const patientName = result.patientName || 'Unknown';
-        container.style.display = 'block';
-        displayVisionReport(result, `Vision Test Report - ${patientName}`);
-        
-        // Scroll to report
-        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-
-    // Display vision test progress graph
-    function displayVisionGraph(results, patientName) {
-        // Sort results by date
-        const sortedResults = [...results].sort((a, b) => {
-            const dateA = new Date(a.when || 0);
-            const dateB = new Date(b.when || 0);
-            return dateA - dateB;
-        });
-
-        // Prepare data for chart
         const labels = sortedResults.map(r => {
             const date = new Date(r.when || Date.now());
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -265,33 +111,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return Number.isFinite(val) ? val : null;
         });
 
-        // Calculate average LogMAR (lower is better)
-        const avgLogmarData = sortedResults.map(r => {
-            const right = Number(r.rightLogmar);
-            const left = Number(r.leftLogmar);
-            if (Number.isFinite(right) && Number.isFinite(left)) {
-                return (right + left) / 2;
-            }
-            return null;
-        });
-
-        // Destroy existing chart if it exists
         if (window.visionChartInstance) {
             window.visionChartInstance.destroy();
         }
 
-        container.style.display = 'block';
         container.innerHTML = `
             <div class="vt-result" style="margin:0;">
                 <div class="results-table-container">
-                    <h3>Vision Test Progress - ${patientName}</h3>
+                    <h3>Vision Test Progress</h3>
                     <p style="margin-bottom: 20px; color: var(--text-muted);">
-                        Lower LogMAR values indicate better vision. This graph shows your vision test results over time.
+                        Lower LogMAR values indicate better vision. This graph shows your personal results over time.
                     </p>
                     <canvas id="visionChart" style="max-height: 400px;"></canvas>
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-secondary" onclick="window.viewSpecificReport(0)">View Latest Report</button>
-                    </div>
                 </div>
             </div>
         `;
@@ -300,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.visionChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels,
                 datasets: [
                     {
                         label: 'Right Eye (LogMAR)',
@@ -317,15 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         backgroundColor: 'rgba(54, 162, 235, 0.2)',
                         tension: 0.4,
                         fill: false
-                    },
-                    {
-                        label: 'Average (LogMAR)',
-                        data: avgLogmarData,
-                        borderColor: 'rgb(255, 205, 86)',
-                        backgroundColor: 'rgba(255, 205, 86, 0.2)',
-                        tension: 0.4,
-                        fill: false,
-                        borderDash: [5, 5]
                     }
                 ]
             },
@@ -335,93 +157,115 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Vision Test Results Over Time',
+                        text: 'Your Vision Test Results Over Time',
                         font: { size: 16, weight: 'bold' }
                     },
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+                    legend: { display: true, position: 'top' }
                 },
                 scales: {
                     y: {
                         beginAtZero: false,
-                        reverse: false,
-                        title: {
-                            display: true,
-                            text: 'LogMAR (Lower is Better)'
-                        }
+                        title: { display: true, text: 'LogMAR (Lower is Better)' }
                     },
                     x: {
-                        title: {
-                            display: true,
-                            text: 'Test Date'
-                        }
+                        title: { display: true, text: 'Test Date' }
                     }
                 }
             }
         });
-
-        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // Display lazy eye progress graph
-    async function displayLazyEyeGraph(patientName) {
-        try {
-            if (window.LazyDB && typeof window.LazyDB.initLazyFirebase === 'function') {
-                window.LazyDB.initLazyFirebase();
-            }
+    async function loadVisionReport() {
+        if (!currentUserName) {
+            container.innerHTML = '<p>Please sign in to view your reports.</p>';
+            return;
+        }
 
-            const results = await window.LazyDB?.getLazySessionsByPatientName(patientName);
-            
+        container.style.display = 'block';
+        container.innerHTML = '<p>Loading your vision test results…</p>';
+
+        try {
+            if (window.VisionDB?.initFirebase) window.VisionDB.initFirebase();
+
+            const results = await window.VisionDB?.getVisionResultsByPatientName(currentUserName);
             if (!results || results.length === 0) {
-                container.innerHTML = `
-                    <div class="vt-result" style="margin:0;">
-                        <p>No lazy eye sessions found for ${patientName}.</p>
-                    </div>
-                `;
+                container.innerHTML =
+                    '<p>No vision tests found for your profile yet. Complete a vision test to see results here.</p>';
                 return;
             }
 
-            // Sort by date
-            const sortedResults = [...results].sort((a, b) => {
-                const dateA = new Date(a.when || 0);
-                const dateB = new Date(b.when || 0);
-                return dateA - dateB;
-            });
+            window.currentSearchResults = results;
 
+            if (results.length > 1) {
+                displayVisionGraph(results);
+                const listHtml = results.map((result, index) => {
+                    const when = result.when ? new Date(result.when) : new Date();
+                    const dateStr = when.toISOString().split('T')[0];
+                    const timeStr = when.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    return `
+                        <div class="test-date-item">
+                            <div class="test-date-info">
+                                <span class="test-date">${dateStr}</span>
+                                <span class="test-time">${timeStr}</span>
+                            </div>
+                            <button type="button" class="btn-view-report" data-result-index="${index}">View Report</button>
+                        </div>
+                    `;
+                }).join('');
+
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="results-table-container" style="margin-top:24px;">
+                        <h3>All Vision Tests</h3>
+                        <div class="test-dates-list">${listHtml}</div>
+                    </div>
+                `);
+
+                container.querySelectorAll('.btn-view-report').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const index = parseInt(this.getAttribute('data-result-index'), 10);
+                        displayVisionReport(results[index], 'Vision Test Report');
+                    });
+                });
+            } else {
+                displayVisionReport(results[0], 'Latest Vision Test');
+            }
+        } catch (e) {
+            console.error('Error loading vision results:', e);
+            container.innerHTML = '<p>Could not load your vision test results. Please try again later.</p>';
+        }
+    }
+
+    async function displayLazyEyeGraph() {
+        try {
+            if (window.LazyDB?.initLazyFirebase) window.LazyDB.initLazyFirebase();
+
+            const results = await window.LazyDB?.getLazySessionsByPatientName(currentUserName);
+            if (!results || results.length === 0) return;
+
+            const sortedResults = [...results].sort((a, b) => new Date(a.when || 0) - new Date(b.when || 0));
             const labels = sortedResults.map(r => {
                 const date = new Date(r.when || Date.now());
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             });
+            const totalScores = sortedResults.map(r => (typeof r.sessionTotal === 'number' ? r.sessionTotal : 0));
 
-            const totalScores = sortedResults.map(r => {
-                return typeof r.sessionTotal === 'number' ? r.sessionTotal : 0;
-            });
+            if (window.lazyChartInstance) window.lazyChartInstance.destroy();
 
-            // Destroy existing chart if it exists
-            if (window.lazyChartInstance) {
-                window.lazyChartInstance.destroy();
-            }
-
-            container.style.display = 'block';
-            container.innerHTML = `
-                <div class="vt-result" style="margin:0;">
-                    <div class="results-table-container">
-                        <h3>Lazy Eye Game Progress - ${patientName}</h3>
-                        <p style="margin-bottom: 20px; color: var(--text-muted);">
-                            This graph shows your total scores across all lazy eye training sessions.
-                        </p>
-                        <canvas id="lazyChart" style="max-height: 400px;"></canvas>
-                    </div>
+            const graphBlock = document.createElement('div');
+            graphBlock.style.marginTop = '24px';
+            graphBlock.innerHTML = `
+                <div class="results-table-container">
+                    <h3>Training Progress</h3>
+                    <canvas id="lazyChart" style="max-height: 400px;"></canvas>
                 </div>
             `;
+            container.appendChild(graphBlock);
 
             const ctx = document.getElementById('lazyChart').getContext('2d');
             window.lazyChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
                         label: 'Total Score',
                         data: totalScores,
@@ -437,57 +281,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Lazy Eye Training Scores Over Time',
+                            text: 'Your Lazy Eye Training Scores Over Time',
                             font: { size: 16, weight: 'bold' }
-                        },
-                        legend: {
-                            display: true,
-                            position: 'top'
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Total Score'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Session Date'
-                            }
-                        }
+                        y: { beginAtZero: true, title: { display: true, text: 'Total Score' } },
+                        x: { title: { display: true, text: 'Session Date' } }
                     }
                 }
             });
-
-            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (e) {
-            console.error('Error loading lazy eye graph:', e);
-            container.innerHTML = '<p>Error loading lazy eye progress graph.</p>';
+            console.warn('Could not load lazy eye graph:', e);
         }
     }
 
-    // Make displayLazyEyeGraph available globally
-    window.displayLazyEyeGraph = displayLazyEyeGraph;
-
     async function loadLazyReport() {
-        container.style.display = 'block';
-        container.innerHTML = '<p>Loading your latest lazy eye session…</p>';
-        try {
-            if (window.LazyDB && typeof window.LazyDB.initLazyFirebase === 'function') {
-                window.LazyDB.initLazyFirebase();
-            }
+        if (!currentUserName) {
+            container.innerHTML = '<p>Please sign in to view your reports.</p>';
+            return;
+        }
 
-            const latest = await window.LazyDB?.getLatestLazySession();
-            if (!latest) {
+        container.style.display = 'block';
+        container.innerHTML = '<p>Loading your lazy eye training results…</p>';
+
+        try {
+            if (window.LazyDB?.initLazyFirebase) window.LazyDB.initLazyFirebase();
+
+            const sessions = await window.LazyDB?.getLazySessionsByPatientName(currentUserName);
+            if (!sessions || sessions.length === 0) {
                 container.innerHTML =
-                    '<p>No lazy eye sessions found yet. Please finish all games at least once.</p>';
+                    '<p>No lazy eye training sessions found for your profile yet. Complete the Lazy Eye games to see results here.</p>';
                 return;
             }
 
+            const latest = sessions[0];
             const when = latest.when ? new Date(latest.when) : new Date();
             const games = Array.isArray(latest.games) ? latest.games : [];
             const sessionTotal = typeof latest.sessionTotal === 'number'
@@ -496,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const dateStr = when.toISOString().split('T')[0];
             const timeStr = when.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            const patientName = latest.patientName || 'Unknown';
 
             const rows = games.map(g => `
                 <tr>
@@ -506,34 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `).join('');
 
-            // Check if there are multiple sessions for this patient
-            let graphButton = '';
-            if (patientName && patientName !== 'Unknown') {
-                try {
-                    const allSessions = await window.LazyDB?.getLazySessionsByPatientName(patientName);
-                    if (allSessions && allSessions.length > 1) {
-                        const safeName = patientName.replace(/'/g, "\\'");
-                        graphButton = `
-                            <div style="margin-top: 20px;">
-                                <button class="btn btn-primary" id="btn-lazy-graph" data-patient-name="${safeName}">
-                                    Show Progress Graph (${allSessions.length} sessions)
-                                </button>
-                            </div>
-                        `;
-                    }
-                } catch (e) {
-                    console.warn('Could not check for multiple sessions:', e);
-                }
-            }
-
             container.innerHTML = `
                 <div class="vt-result" style="margin:0;">
                     <div class="result-summary">
-                        This report shows your most recent lazy eye training session.
-                        Total score across all games: <strong>${sessionTotal}</strong>.
+                        Your most recent lazy eye training session. Total score across all games: <strong>${sessionTotal}</strong>.
                     </div>
                     <div class="results-table-container">
-                        <h3>Latest Lazy Eye Session${patientName && patientName !== 'Unknown' ? ` - ${patientName}` : ''}</h3>
+                        <h3>Latest Lazy Eye Session</h3>
                         <div class="test-info">
                             <span>Date: ${dateStr}</span>
                             <span>Time: ${timeStr}</span>
@@ -554,175 +360,60 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </tr>
                             </tbody>
                         </table>
-                        ${graphButton}
                     </div>
                 </div>
             `;
 
-            // Add event listener for lazy eye graph button
-            setTimeout(() => {
-                const lazyGraphBtn = document.getElementById('btn-lazy-graph');
-                if (lazyGraphBtn) {
-                    lazyGraphBtn.addEventListener('click', () => {
-                        const patientName = lazyGraphBtn.getAttribute('data-patient-name');
-                        displayLazyEyeGraph(patientName);
-                    });
-                }
-            }, 0);
+            if (sessions.length > 1) await displayLazyEyeGraph();
         } catch (e) {
-            console.error('Error loading latest lazy-eye session:', e);
-            container.innerHTML =
-                '<p>Could not load lazy eye session results. Please finish all games at least once.</p>';
+            console.error('Error loading lazy eye session:', e);
+            container.innerHTML = '<p>Could not load your lazy eye training results. Please try again later.</p>';
         }
     }
 
-    // Search functionality
-    if (searchBtn && searchInput) {
-        searchBtn.addEventListener('click', async () => {
-            const patientName = searchInput.value.trim();
-            if (patientName) {
-                currentView = 'search';
-                setActive(null);
-                await searchByPatientName(patientName);
-            }
-        });
-
-        searchInput.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const patientName = searchInput.value.trim();
-                if (patientName) {
-                    currentView = 'search';
-                    setActive(null);
-                    await searchByPatientName(patientName);
-                }
-            }
-        });
-    }
-
     btnVision.addEventListener('click', () => {
-        currentView = 'latest';
         setActive(btnVision);
-        searchResults.style.display = 'none';
-        container.style.display = 'block';
         loadVisionReport();
     });
-    
+
     btnLazy.addEventListener('click', () => {
-        currentView = 'latest';
         setActive(btnLazy);
-        searchResults.style.display = 'none';
-        container.style.display = 'block';
         loadLazyReport();
     });
 
-    // Clear all data functionality
-    const clearDataBtn = document.getElementById('btn-clear-data');
-    if (clearDataBtn) {
-        clearDataBtn.addEventListener('click', async () => {
-            // Show confirmation dialog
-            const confirmed = confirm(
-                '⚠️ WARNING: This will permanently delete ALL vision test data!\n\n' +
-                'This action cannot be undone.\n\n' +
-                'Are you sure you want to continue?'
-            );
-            
-            if (!confirmed) {
-                return;
-            }
-            
-            // Double confirmation
-            const doubleConfirm = confirm(
-                'This will delete ALL test records from both local storage and Firebase.\n\n' +
-                'Click OK to confirm deletion, or Cancel to abort.'
-            );
-            
-            if (!doubleConfirm) {
-                return;
-            }
-            
-            // Disable button and show loading
-            clearDataBtn.disabled = true;
-            clearDataBtn.textContent = 'Clearing...';
-            
-            try {
-                // Initialize both Firebase instances
-                if (window.VisionDB && typeof window.VisionDB.initFirebase === 'function') {
-                    window.VisionDB.initFirebase();
-                }
-                if (window.LazyDB && typeof window.LazyDB.initLazyFirebase === 'function') {
-                    window.LazyDB.initLazyFirebase();
-                }
-                
-                // Clear both vision test data and lazy eye session data
-                const [visionResult, lazyResult] = await Promise.all([
-                    window.VisionDB?.clearAllVisionResults(),
-                    window.LazyDB?.clearAllLazySessions()
-                ]);
-                
-                const visionOk = visionResult && visionResult.ok;
-                const lazyOk = lazyResult && lazyResult.ok;
-                
-                if (visionOk && lazyOk) {
-                    // Show success message
-                    container.innerHTML = `
-                        <div class="clear-success-message">
-                            <h3>✅ All Data Cleared Successfully</h3>
-                            <p>All vision test data and lazy eye session data have been deleted.</p>
-                            <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">
-                                ✅ Vision tests: ${visionResult.message || 'Cleared'}
-                            </p>
-                            <p style="margin-top: 5px; font-size: 14px; color: var(--text-muted);">
-                                ✅ Lazy eye sessions: ${lazyResult.message || 'Cleared'}
-                            </p>
-                            <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">
-                                Note: If Firestore deletion failed, some data may still exist in the cloud database.
-                            </p>
-                        </div>
-                    `;
-                } else if (visionOk || lazyOk) {
-                    // Partial success
-                    container.innerHTML = `
-                        <div class="clear-success-message">
-                            <h3>⚠️ Partial Clear</h3>
-                            <p>Some data was cleared, but there were issues:</p>
-                            <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">
-                                ${visionOk ? '✅ Vision tests: Cleared' : '❌ Vision tests: Failed to clear'}
-                            </p>
-                            <p style="margin-top: 5px; font-size: 14px; color: var(--text-muted);">
-                                ${lazyOk ? '✅ Lazy eye sessions: Cleared' : '❌ Lazy eye sessions: Failed to clear'}
-                            </p>
-                        </div>
-                    `;
-                } else {
-                    throw new Error('Failed to clear data');
-                }
-                
-                // Clear search results
-                searchResults.style.display = 'none';
-                searchInput.value = '';
-                window.currentSearchResults = null;
-                
-                // Reset button after delay
-                setTimeout(() => {
-                    clearDataBtn.disabled = false;
-                    clearDataBtn.textContent = 'Clear All Test Data';
-                    container.innerHTML = '<p>All test data has been cleared. Take a new test to see results here.</p>';
-                }, 3000);
-            } catch (e) {
-                console.error('Error clearing data:', e);
-                container.innerHTML = `
-                    <div class="clear-error-message">
-                        <h3>❌ Error Clearing Data</h3>
-                        <p>An error occurred while clearing data: ${e.message}</p>
-                    </div>
-                `;
-                
-                clearDataBtn.disabled = false;
-                clearDataBtn.textContent = 'Clear All Test Data';
-            }
-        });
+    document.getElementById('back-btn')?.addEventListener('click', () => {
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = 'dashboard.html';
+    });
+
+    async function init() {
+        const yearEl = document.getElementById('year');
+        if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+        const session = await window.SupabaseApp?.waitForSession?.(20, 400);
+        if (!session?.user?.id) {
+            window.location.replace('index.html');
+            return;
+        }
+
+        let profile = null;
+        try {
+            profile = await window.SupabaseApp.getProfile(session.user.id);
+        } catch (_) {}
+
+        window.AuthProfile?.cacheProfile?.(profile);
+        currentUserName = profile?.name || localStorage.getItem('userName') || '';
+        const gender = profile?.gender || localStorage.getItem('userGender');
+        if (gender) {
+            window.Profile?.applyThemeFromGender?.(gender);
+            window.Branding?.applyFromGender?.(gender);
+        }
+
+        if (userNameEl) userNameEl.textContent = currentUserName || 'your account';
+
+        setActive(btnVision);
+        await loadVisionReport();
     }
 
-    // Nothing shown initially - user must search by name first
-    container.style.display = 'none';
+    init();
 });

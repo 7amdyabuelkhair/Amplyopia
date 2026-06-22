@@ -120,7 +120,7 @@
     return applyBranding(themeFromGender(gender));
   }
 
-  async function applyFromAuthState() {
+  async function applyFromAuthState(authEvent) {
     let gender = localStorage.getItem('userGender');
     try {
       if (window.SupabaseApp?.getSession) {
@@ -128,12 +128,13 @@
         if (session?.user?.id && window.SupabaseApp?.getProfile) {
           const profile = await window.SupabaseApp.getProfile(session.user.id);
           if (profile?.gender) gender = profile.gender;
-        } else if (!session?.user?.id) {
+          window.AuthProfile?.cacheProfile?.(profile);
+        } else if (!session?.user?.id && authEvent === 'SIGNED_OUT') {
           gender = null;
         }
       }
     } catch (_) {
-      // keep localStorage gender
+      // keep localStorage gender while session restores
     }
     return applyFromGender(gender);
   }
@@ -151,6 +152,13 @@
   document.addEventListener('DOMContentLoaded', () => {
     applyFromGender(localStorage.getItem('userGender'));
     setTimeout(() => applyFromAuthState(), 0);
-    window.SupabaseApp?.onAuthStateChange?.(() => applyFromAuthState());
+    window.SupabaseApp?.onAuthStateChange?.((event) => applyFromAuthState(event));
+  });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'userGender') applyFromGender(e.newValue);
+    if (e.key === 'amplyopia-auth-session' && e.newValue) {
+      setTimeout(() => applyFromAuthState(), 100);
+    }
   });
 })();

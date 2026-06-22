@@ -55,9 +55,6 @@
       'opt-guidelines': () => {
         window.location.href = 'guidelines.html';
       },
-      'opt-report': () => {
-        window.location.href = 'report.html';
-      },
       'opt-dashboard': () => {
         window.location.href = 'dashboard.html';
       }
@@ -80,6 +77,8 @@
 
   document.getElementById('nav-signout-btn')?.addEventListener('click', async () => {
     await window.SupabaseApp?.signOut?.();
+    window.AuthProfile?.clearLocalProfileCache?.();
+    window.Branding?.applyFromGender?.(null);
     window.location.href = indexUrl();
   });
 
@@ -102,7 +101,7 @@
     try {
       setLoading('Checking your account…', true);
 
-      const session = await window.SupabaseApp.waitForSession?.(12, 350);
+      const session = await window.SupabaseApp.waitForSession?.(20, 400);
       if (!session?.user?.id) {
         fail('Sign-in session was lost. Allow storage for amplyopia.com and sign in again.');
         setTimeout(() => window.location.replace(indexUrl()), 4000);

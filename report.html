@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <title>Reports | Amplyopia</title>
-    <meta name="description" content="View your latest Amplyopia vision test and lazy eye game results.">
+    <title>My Reports | Amplyopia</title>
+    <meta name="description" content="View your personal Amplyopia vision test and lazy eye training reports.">
     <link rel="canonical" href="https://amplyopia.com/report.html">
 
     <link rel="stylesheet" href="css/styles.css">
@@ -19,60 +19,45 @@
     <link rel="manifest" id="app-manifest" href="/manifest-guest.json">
     <meta name="theme-color" id="app-theme-color" content="#ffe066">
     <link rel="stylesheet" href="css/pwa.css">
-    <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <header class="site-header">
         <div class="container header-inner">
             <button class="back-btn" id="back-btn" aria-label="Go back">←</button>
-            <a class="logo" href="services.html">
-                <img src="/images/logo/yellow-favicon-96x96.png" alt="Amplyopia" class="logo-img" id="site-logo-img" width="40" height="40">
-                <span class="logo-text">VisionCare</span>
+            <a class="logo" href="dashboard.html">
+                <img src="/images/logo/yellow-favicon-96x96.png" alt="Amplyopia" class="logo-img" id="site-logo-img" data-branding="avatar" width="40" height="40">
+                <span class="logo-text">amplyopia</span>
             </a>
         </div>
     </header>
 
     <main class="section">
         <div class="container">
-            <h1>Reports</h1>
-            <p class="landing-note">Enter a patient name below to search for their test results.</p>
+            <h1>My Reports</h1>
+            <p class="landing-note">Detailed results for <strong id="report-user-name">your account</strong>. Only your signed-in profile is shown here.</p>
 
-            <!-- Search Interface -->
-            <div class="search-container">
-                <div class="search-box">
-                    <input type="text" id="patient-search" placeholder="Enter patient name to search..." class="search-input">
-                    <button id="btn-search" class="btn btn-primary">Search</button>
-                </div>
-                <div id="search-results" class="search-results" style="display: none;"></div>
+            <div class="report-toggle" id="report-toggle">
+                <button id="btn-report-vision" class="btn primary">Vision Test</button>
+                <button id="btn-report-lazy" class="btn">Lazy Eye Training</button>
             </div>
 
-            <div class="report-toggle" id="report-toggle" style="display: none;">
-                <button id="btn-report-vision" class="btn primary">Latest Vision Test</button>
-                <button id="btn-report-lazy" class="btn">Latest Lazy Eye Games</button>
-            </div>
-
-            <div class="clear-data-container" id="clear-data-container" style="display: none;">
-                <button id="btn-clear-data" class="btn btn-danger">Clear All Test Data</button>
-            </div>
-
-            <div id="report-content" class="vt-card" style="display: none;">
+            <div id="report-content" class="vt-card">
+                <p>Loading your reports…</p>
             </div>
         </div>
     </main>
 
     <footer class="site-footer">
         <div class="container">
-            <p>© <span id="year"></span> VisionCare</p>
+            <p>© <span id="year"></span> Amplyopia</p>
             <p><a href="terms.html">Terms &amp; Conditions</a> | <a href="privacy.html">Privacy Policy</a></p>
         </div>
     </footer>
 
-    <!-- Firebase (compat) for simple CDN usage, shared by both projects -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script>
-        // Vision test Firebase project
         window.FIREBASE_CONFIG = {
             apiKey: "AIzaSyD43OELqQh9x129lWoYPDF5ejYDeJbHaKo",
             authDomain: "amplyopia-1df6b.firebaseapp.com",
@@ -81,7 +66,6 @@
             messagingSenderId: "1061507123584",
             appId: "1:1061507123584:web:2f2c91fb6845d0c1789965"
         };
-        // Lazy-eye games Firebase project
         window.LAZY_FIREBASE_CONFIG = {
             apiKey: "AIzaSyBZtcD0LFwFblHmjZ_kp4XaE-S6PZEepKg",
             authDomain: "lazy-eye-4e3d0.firebaseapp.com",
@@ -97,6 +81,7 @@
     <script src="js/supabase.js" defer></script>
     <script src="js/branding.js" defer></script>
     <script src="js/profile.js" defer></script>
+    <script src="js/auth-profile.js" defer></script>
     <script src="js/pwa-config.js" defer></script>
     <script src="js/session-timer.js" defer></script>
     <script src="js/push-client.js" defer></script>
@@ -107,5 +92,3 @@
     <script src="js/report.js" defer></script>
 </body>
 </html>
-
-

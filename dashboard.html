@@ -14,6 +14,13 @@
     <link rel="apple-touch-icon" id="app-apple-touch" href="/images/logo/yellow-apple-touch-icon.png">
     <link rel="manifest" id="app-manifest" href="/manifest-guest.json">
     <meta name="theme-color" id="app-theme-color" content="#ffe066">
+    <script>
+    try {
+      var g = localStorage.getItem('userGender');
+      if (g === 'boy') document.documentElement.classList.add('theme-boy');
+      else if (g === 'girl') document.documentElement.classList.add('theme-girl');
+    } catch (e) {}
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="css/pwa.css">
 </head>
@@ -79,6 +86,7 @@
                             <div class="form-actions" style="margin-top:10px;">
                                 <button type="button" class="btn btn-secondary" id="dash-back">Back</button>
                                 <button type="button" class="btn btn-primary" id="dash-refresh">Refresh</button>
+                                <a class="btn btn-primary" href="report.html" id="dash-reports">Reports</a>
                             </div>
 
                             <div class="form-actions" style="margin-top:0;">
@@ -203,6 +211,7 @@
     <script src="js/supabase.js"></script>
     <script src="js/branding.js"></script>
     <script src="js/profile.js"></script>
+    <script src="js/auth-profile.js"></script>
     <script src="js/score.js"></script>
     <script src="js/legal-consent.js"></script>
     <script src="js/pwa-config.js" defer></script>
@@ -309,6 +318,7 @@
                     }
 
                     const profile = await window.SupabaseApp?.getProfile?.(uid);
+                    window.AuthProfile?.cacheProfile?.(profile);
                     const name = profile?.name || localStorage.getItem('userName') || '-';
                     const gender = profile?.gender || localStorage.getItem('userGender') || '-';
                     const birthdate = profile?.birthdate || localStorage.getItem('userBirthdate') || '-';
@@ -491,7 +501,9 @@
             document.getElementById('dash-refresh')?.addEventListener('click', () => load());
             document.getElementById('dash-signout')?.addEventListener('click', async () => {
                 await window.SupabaseApp?.signOut?.();
-                window.location.href = 'services.html';
+                window.AuthProfile?.clearLocalProfileCache?.();
+                window.Branding?.applyFromGender?.(null);
+                window.location.href = 'index.html';
             });
 
             load();

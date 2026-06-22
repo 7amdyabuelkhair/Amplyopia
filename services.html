@@ -13,6 +13,13 @@
     <link rel="icon" id="app-favicon-png" type="image/png" sizes="96x96" href="/images/logo/yellow-favicon-96x96.png">
     <link rel="manifest" id="app-manifest" href="/manifest-guest.json">
     <meta name="theme-color" id="app-theme-color" content="#ffe066">
+    <script>
+    try {
+      var g = localStorage.getItem('userGender');
+      if (g === 'boy') document.documentElement.classList.add('theme-boy');
+      else if (g === 'girl') document.documentElement.classList.add('theme-girl');
+    } catch (e) {}
+    </script>
 </head>
 <body>
     <header class="site-header">
@@ -76,14 +83,6 @@
                             <h3 class="option-title">Guidelines</h3>
                             <p class="option-description">Learn about eye care and vision health</p>
                         </button>
-
-                        <button type="button" class="option-card" id="opt-report">
-                            <div class="option-image-wrapper">
-                                <img src="images/report.png" alt="Report" class="option-image" onerror="this.style.display='none';">
-                            </div>
-                            <h3 class="option-title">Report</h3>
-                            <p class="option-description">View your test results and history</p>
-                        </button>
                     </div>
 
                     <a href="index.html" class="btn btn-secondary" style="margin-top:1rem;display:inline-flex;">← Back to home</a>
@@ -94,7 +93,11 @@
 
     <div id="auth-loading" class="auth-loading" role="status" aria-live="polite" aria-busy="true">
         <div class="auth-loading-card">
-            <div class="auth-loading-spinner" aria-hidden="true"></div>
+            <div class="auth-loading-glasses" aria-hidden="true">
+                <div class="auth-loading-glasses-lens auth-loading-glasses-lens--red"></div>
+                <div class="auth-loading-glasses-bridge"></div>
+                <div class="auth-loading-glasses-lens auth-loading-glasses-lens--blue"></div>
+            </div>
             <p class="auth-loading-title">Please wait</p>
             <p class="auth-loading-text" id="auth-loading-text">Opening services…</p>
         </div>
