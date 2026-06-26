@@ -20,11 +20,52 @@
         if (!userName || !userAge) {
             console.warn('Child profile not found in storage. Open the main page and complete sign-in/profile first.');
         }
-        const gender = localStorage.getItem('userGender');
+        applyVisionTheme();
+    })();
+
+    function applyVisionTheme() {
+        const gender = String(localStorage.getItem('userGender') || '').toLowerCase();
+        const theme = gender === 'boy' ? 'boy' : gender === 'girl' ? 'girl' : 'guest';
+        document.body.classList.remove('vt-theme-guest', 'vt-theme-boy', 'vt-theme-girl');
+        document.body.classList.add(`vt-theme-${theme}`);
+        document.documentElement.classList.remove('vt-theme-guest', 'vt-theme-boy', 'vt-theme-girl');
+        document.documentElement.classList.add(`vt-theme-${theme}`);
+
         if (gender && window.Profile?.applyThemeFromGender) {
             window.Profile.applyThemeFromGender(gender);
         }
-    })();
+        if (gender && window.Branding?.applyFromGender) {
+            window.Branding.applyFromGender(gender);
+        }
+
+        const charLeft = document.querySelector('.vt-deco--char-left-img');
+        const charRight = document.querySelector('.vt-deco--char-right-img');
+        const avatar = document.querySelector('.vt-info-avatar');
+
+        const assets = {
+            guest: { left: 'giraffe.png', right: 'lion.png', avatar: 'boy-avatar.png' },
+            boy: { left: 'rocket.png', right: 'boy.png', avatar: 'boy-avatar.png' },
+            girl: { left: 'girl.png', right: 'bunny.png', avatar: 'girl-avatar.png' }
+        };
+        const pack = assets[theme] || assets.guest;
+        if (charLeft) charLeft.src = `vision-img/${pack.left}`;
+        if (charRight) charRight.src = `vision-img/${pack.right}`;
+        if (avatar) avatar.src = `vision-img/${pack.avatar}`;
+
+        document.querySelectorAll('.vt-theme-guest-only').forEach(el => {
+            el.style.display = theme === 'guest' ? '' : 'none';
+        });
+        document.querySelectorAll('.vt-theme-boy-only').forEach(el => {
+            el.style.display = theme === 'boy' ? '' : 'none';
+        });
+        document.querySelectorAll('.vt-theme-girl-only').forEach(el => {
+            el.style.display = theme === 'girl' ? '' : 'none';
+        });
+    }
+
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'userGender') applyVisionTheme();
+    });
 
     // For phone usage distance (arm's length): ~0.30–0.50 m
     const idealMin = 0.30; // meters
