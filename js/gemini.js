@@ -1,5 +1,5 @@
 (() => {
-  const GEMINI_API_KEY = 'PUT_API_KEY_HERE';
+  const GEMINI_API_KEY = 'AQ.Ab8RN6IbgoF7oaIY0zMEEhQTVwHlnVq2VkvsMEzpFQL3-rOHVA';
   const GEMINI_MODEL = 'gemini-2.0-flash';
 
   const SYSTEM_PROMPT = `You are an AI vision screening assistant for a pediatric online vision test app.
