@@ -23,8 +23,10 @@ html[data-page="vision-test"] {
     --vt-char-h: clamp(90px, 32vh, 360px);
     --vt-char-hero-w: clamp(80px, 18vw, 260px);
     --vt-char-hero-h: clamp(75px, 22vh, 220px);
+    --vt-char-right-w: clamp(140px, 34vw, 500px);
+    --vt-char-right-h: clamp(130px, 44vh, 440px);
     --vt-char-inset-left: -4%;
-    --vt-char-inset-right: -4%;
+    --vt-char-inset-right: -6%;
     --vt-char-bottom: 0;
 }
 
@@ -145,19 +147,21 @@ html[data-page="vision-test"] {
 
 [data-page="vision-test"] .vt-deco--char-left {
     left: var(--vt-char-inset-left);
+    width: var(--vt-char-w);
+    max-height: var(--vt-char-h);
 }
 
 [data-page="vision-test"] .vt-deco--char-right {
     right: var(--vt-char-inset-right);
+    width: var(--vt-char-right-w);
+    max-height: var(--vt-char-right-h);
 }
 
-[data-page="vision-test"].vt-theme-guest .vt-deco--char-left,
-[data-page="vision-test"].vt-theme-guest .vt-deco--char-right {
+[data-page="vision-test"].vt-theme-guest .vt-deco--char-left {
     width: clamp(120px, 34vw, 460px);
     max-height: clamp(100px, 38vh, 400px);
 }
 
-[data-page="vision-test"].vt-theme-boy .vt-deco--char-right,
 [data-page="vision-test"].vt-theme-girl .vt-deco--char-left {
     width: var(--vt-char-hero-w);
     max-height: var(--vt-char-hero-h);
@@ -801,12 +805,13 @@ html[data-page="vision-test"] {
         --vt-char-h: clamp(75px, 24vh, 150px);
         --vt-char-hero-w: clamp(65px, 28vw, 140px);
         --vt-char-hero-h: clamp(60px, 18vh, 130px);
+        --vt-char-right-w: clamp(110px, 46vw, 240px);
+        --vt-char-right-h: clamp(100px, 34vh, 220px);
         --vt-char-inset-left: -8%;
-        --vt-char-inset-right: -8%;
+        --vt-char-inset-right: -10%;
     }
 
-    [data-page="vision-test"].vt-theme-guest .vt-deco--char-left,
-    [data-page="vision-test"].vt-theme-guest .vt-deco--char-right {
+    [data-page="vision-test"].vt-theme-guest .vt-deco--char-left {
         width: clamp(100px, 40vw, 180px);
         max-height: clamp(85px, 26vh, 160px);
     }
@@ -828,12 +833,13 @@ html[data-page="vision-test"] {
         --vt-char-h: clamp(105px, 30vh, 260px);
         --vt-char-hero-w: clamp(90px, 16vw, 200px);
         --vt-char-hero-h: clamp(80px, 20vh, 180px);
+        --vt-char-right-w: clamp(170px, 30vw, 360px);
+        --vt-char-right-h: clamp(155px, 38vh, 320px);
         --vt-char-inset-left: -5%;
-        --vt-char-inset-right: -5%;
+        --vt-char-inset-right: -7%;
     }
 
-    [data-page="vision-test"].vt-theme-guest .vt-deco--char-left,
-    [data-page="vision-test"].vt-theme-guest .vt-deco--char-right {
+    [data-page="vision-test"].vt-theme-guest .vt-deco--char-left {
         width: clamp(140px, 30vw, 320px);
         max-height: clamp(115px, 32vh, 280px);
     }
@@ -846,12 +852,13 @@ html[data-page="vision-test"] {
         --vt-char-h: clamp(150px, 38vh, 340px);
         --vt-char-hero-w: clamp(110px, 14vw, 240px);
         --vt-char-hero-h: clamp(100px, 24vh, 210px);
+        --vt-char-right-w: clamp(240px, 26vw, 520px);
+        --vt-char-right-h: clamp(220px, 50vh, 460px);
         --vt-char-inset-left: -2%;
-        --vt-char-inset-right: -2%;
+        --vt-char-inset-right: -4%;
     }
 
-    [data-page="vision-test"].vt-theme-guest .vt-deco--char-left,
-    [data-page="vision-test"].vt-theme-guest .vt-deco--char-right {
+    [data-page="vision-test"].vt-theme-guest .vt-deco--char-left {
         width: clamp(200px, 24vw, 440px);
         max-height: clamp(165px, 40vh, 360px);
     }
