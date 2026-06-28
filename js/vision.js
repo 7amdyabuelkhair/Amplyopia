@@ -82,8 +82,8 @@
 
         const assets = {
             guest: { left: 'images/logo/giraffe.png', right: 'images/logo/lion.png', avatar: 'vision-img/boy-avatar.png' },
-            boy: { left: 'vision-img/rocket.png', right: 'images/boy.png', avatar: 'vision-img/boy-avatar.png' },
-            girl: { left: 'images/girl.png', right: 'vision-img/bunny.png', avatar: 'vision-img/girl-avatar.png' }
+            boy: { left: 'vision-img/rocket.png', right: 'vision-img/boy.png', avatar: 'vision-img/boy-avatar.png' },
+            girl: { left: 'vision-img/girl.png', right: 'vision-img/bunny.png', avatar: 'vision-img/girl-avatar.png' }
         };
         const pack = assets[theme] || assets.guest;
         if (charLeft) charLeft.src = pack.left;
