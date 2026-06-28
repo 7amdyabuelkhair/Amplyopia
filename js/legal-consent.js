@@ -41,6 +41,7 @@
     const footer = document.querySelector('footer.site-footer');
     if (!footer) return;
     if (footer.querySelector('[data-legal-footer-links]')) return;
+    if (footer.querySelector('.vt-footer-links, .footer-bottom')) return;
     const container = footer.querySelector('.container') || footer;
     const block = document.createElement('p');
     block.setAttribute('data-legal-footer-links', '1');
